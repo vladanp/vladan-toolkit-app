@@ -1,0 +1,248 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  FORCE_COLOR: 1
+
+jobs:
+  lint:
+    name: Lint, format & typecheck
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-js
+      - run: pnpm biome ci .
+      - run: pnpm typecheck
+      - name: Scan for committed secrets
+        run: pnpm lint:secrets
+
+  commits:
+    name: Conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: $/.github/actions/setup-js
+      - name: Lint commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: pnpm commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+  test:
+    name: Unit & component tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-js
+      - run: pnpm playwright install --with-deps chromium
+      - name: Test with coverage thresholds
+        run: pnpm test:coverage
+      - name: Coverage summary
+        if: always()
+        run: node scripts/coverage-summary.ts coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-web
+          path: coverage/
+          retention-days: 14
+
+  e2e-web:
+    name: E2E (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out the repository
+    strategy:
+      fail-fast: false
+      matrix:
+        # Chromium ≈ WebView2 (Windows); WebKit ≈ WKWebView (macOS) and WebKitGTK (Linux).
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-js
+      - env:
+          BROWSER: ${{ matrix.browser }}
+        run: pnpm playwright install --with-deps "$BROWSER"
+      - env:
+          BROWSER: ${{ matrix.browser }}
+        run: pnpm test:e2e --project="$BROWSER"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read # check out the repository
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-rust
+      - name: Stub frontend build
+        # `generate_context!` embeds ../dist at compile time; clippy and tests don't need the real UI.
+        run: mkdir -p ../dist && echo '<!doctype html>' > ../dist/index.html
+      - run: cargo fmt --check
+        if: runner.os == 'Linux'
+      - run: cargo clippy --all-targets --all-features --locked -- -D warnings
+      - name: Test (includes the "bindings are up to date" check)
+        run: cargo test --locked
+
+  rust-coverage:
+    name: Rust coverage
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read # check out the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-rust
+        with:
+          cache-key: coverage
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: cargo-llvm-cov
+      - run: mkdir -p dist && echo '<!doctype html>' > dist/index.html
+      - name: Test with coverage threshold
+        working-directory: src-tauri
+        run: |
+          cargo llvm-cov --locked --ignore-filename-regex 'src/main\.rs' \
+            --fail-under-lines 80 --summary-only | tee coverage.txt
+          { echo '### Rust coverage'; echo '```'; cat coverage.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  e2e-native:
+    name: Native E2E (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read # check out the repository
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-js
+      - uses: $/.github/actions/setup-rust
+        with:
+          cache-key: e2e
+      - name: Build the app with the embedded WebDriver
+        run: pnpm e2e:native:build
+      - name: Drive the real app
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a pnpm e2e:native
+          else
+            pnpm e2e:native
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: native-e2e-logs-${{ matrix.os }}
+          path: e2e/native/logs/
+          retention-days: 14
+
+  bundle:
+    name: Bundle (${{ matrix.name }})
+    # Installers for every merge to main, so main is always shippable and testable.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read # check out the repository
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS, os: macos-latest, args: --target universal-apple-darwin, targets: 'aarch64-apple-darwin,x86_64-apple-darwin' }
+          - { name: Linux, os: ubuntu-22.04, args: '', targets: '' }
+          - { name: Windows, os: windows-latest, args: '', targets: '' }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-js
+      - uses: $/.github/actions/setup-rust
+        with:
+          targets: ${{ matrix.targets }}
+          cache-key: bundle
+      - name: Build installers
+        env:
+          ARGS: ${{ matrix.args }}
+        run: |
+          read -ra args <<< "$ARGS"
+          pnpm tauri build "${args[@]}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: installers-${{ matrix.name }}
+          path: |
+            src-tauri/target/release/bundle/
+            src-tauri/target/*/release/bundle/
+          retention-days: 7
+
+  ci-ok:
+    name: CI OK
+    # The single required status check for branch protection.
+    if: always()
+    needs: [lint, commits, test, e2e-web, rust, rust-coverage, e2e-native, bundle]
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: All jobs passed or were skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then exit 1; fi
+          done

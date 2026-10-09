@@ -1,0 +1,69 @@
+[package]
+name = "vladan-toolkit"
+version = "0.1.0"
+description = "Vladan Toolkit: an all-in-one desktop toolkit."
+authors = ["Vladan Petrovic"]
+license = "MIT"
+repository = "https://github.com/vladanp/vladan-toolkit-app"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+
+[lib]
+# The `_lib` suffix avoids a name clash with the binary on Windows (cargo#8519).
+name = "vladan_toolkit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = [] }
+tauri-plugin-opener = "2.7"
+tauri-plugin-process = "2.4"
+tauri-plugin-updater = "2.13"
+tauri-plugin-window-state = "2.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+# Typed Rust → TypeScript bindings. Pre-1.0: versions are pinned exactly on purpose.
+specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-typescript = "=0.0.12"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+
+# Test-only plugins for native end-to-end tests. Never compiled into releases.
+tauri-plugin-wdio = { version = "1.5", optional = true }
+tauri-plugin-wdio-webdriver = { version = "1.5", optional = true }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2.5"
+
+[dev-dependencies]
+tauri = { version = "2.12", features = ["test"] }
+
+[features]
+default = []
+# `pnpm e2e:build` enables this to embed a WebDriver server for @wdio/tauri-service.
+e2e = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unused_qualifications = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "warn"
+todo = "warn"
+# Tauri commands receive owned values by design, and their return values are always used.
+needless_pass_by_value = "allow"
+must_use_candidate = "allow"

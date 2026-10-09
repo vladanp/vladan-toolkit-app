@@ -1,0 +1,28 @@
+name: Dependabot auto-merge
+
+# Patch and minor updates merge themselves once every required check is green.
+# Majors always wait for a human. Requires "Allow auto-merge" in the repo settings.
+on: pull_request
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  automerge:
+    name: Enable auto-merge
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'vladanp/vladan-toolkit-app'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # merge the pull request
+      pull-requests: write # enable auto-merge
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"

@@ -1,0 +1,26 @@
+# pnpm settings (pnpm 12 reads these here, not from package.json).
+
+# Install scripts are denied unless approved here: none of ours needs one.
+allowBuilds:
+  edgedriver: false
+  esbuild: false
+  geckodriver: false
+  lefthook: false
+
+# Force patched versions of vulnerable transitive dev dependencies
+# (pulled in by WebdriverIO 9's mocha / puppeteer chain).
+overrides:
+  serialize-javascript@<7.0.5: ^7.0.5
+  basic-ftp@<6.2.1: ^6.2.1
+
+# Accepted risks. Only for advisories with no fixed version that sit in test-only tooling
+# and never ship in the app (`pnpm audit --prod` must always be clean). Revisit monthly;
+# remove an entry as soon as a fix exists.
+auditConfig:
+  ignoreGhsas:
+    # extract-zip symlink traversal: used by @puppeteer/browsers to unpack browser
+    # downloads, which our tests never trigger (embedded WebDriver, preinstalled browsers).
+    - GHSA-jmr9-qjv8-65gv
+    - GHSA-7pqw-9j4j-h8q3
+    # braces ReDoS: chokidar file watching inside mocha; only processes local test globs.
+    - GHSA-vfj7-8cjw-p6xm

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Test & coverage output
+coverage/
+playwright-report/
+test-results/
+e2e/native/logs/
+.vitest-attachments/
+__screenshots__/
+
+# Logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Secrets: never commit signing keys or env files
+*.key
+*.pem
+.env
+.env.*
+!.env.example

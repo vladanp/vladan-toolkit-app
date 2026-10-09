@@ -1,0 +1,41 @@
+# Git hooks, installed automatically by `pnpm install` (see the `prepare` script).
+# Skip in an emergency with `--no-verify`; CI runs the same checks anyway.
+output:
+  - failure
+  - summary
+
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{js,ts,tsx,json,jsonc,css,svg}"
+      run: pnpm biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
+    rustfmt:
+      glob: "src-tauri/**/*.rs"
+      run: cargo fmt --manifest-path src-tauri/Cargo.toml -- {staged_files}
+      stage_fixed: true
+    secrets:
+      run: pnpm secretlint --maskSecrets {staged_files}
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm typecheck
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: pnpm commitlint --edit {1}
+
+pre-push:
+  parallel: true
+  commands:
+    lint:
+      run: pnpm biome ci .
+    unit-tests:
+      run: pnpm test:unit
+    rust-lint:
+      glob: "src-tauri/**/*"
+      run: pnpm lint:rust
+    rust-tests:
+      glob: "src-tauri/**/*"
+      run: pnpm test:rust

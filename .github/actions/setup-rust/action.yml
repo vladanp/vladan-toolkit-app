@@ -1,0 +1,34 @@
+name: Set up Rust
+description: Stable Rust with rustfmt/clippy, a build cache, and Tauri's Linux system libraries.
+inputs:
+  targets:
+    description: Extra compilation targets (comma-separated).
+    required: false
+    default: ''
+  cache-key:
+    description: Extra key to separate caches of different build flavors.
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install stable Rust (rustup ships with every runner)
+      shell: bash
+      env:
+        TARGETS: ${{ inputs.targets }}
+      run: |
+        rustup toolchain install stable --profile minimal --component rustfmt,clippy \
+          ${TARGETS:+--target "$TARGETS"}
+        rustup default stable
+        rustc --version
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        workspaces: src-tauri
+        key: ${{ inputs.cache-key }}
+    - name: Install Tauri system dependencies (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xvfb

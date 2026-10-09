@@ -1,0 +1,23 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: textarea
+    id: system
+    attributes:
+      label: System info
+      description: Open the System Info tool (⌘K → "Copy system info as Markdown") and paste it here.
+      render: markdown
+    validations:
+      required: true

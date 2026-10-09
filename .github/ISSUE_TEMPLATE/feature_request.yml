@@ -1,0 +1,14 @@
+name: Tool or feature idea
+description: A new tool for the toolkit, or an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to get done?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could the toolkit help?
