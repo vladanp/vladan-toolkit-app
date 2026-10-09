@@ -31,8 +31,11 @@ can't be set from code. Do these once, in order. Each takes under a minute.
 ## 4. Security features
 
 **Settings → Advanced Security** — enable everything that's offered for public repos:
-Dependabot alerts and security updates, secret scanning with **push protection**,
-private vulnerability reporting.
+
+- **Dependency graph** — required: the `Security / Dependency review` check fails without it
+- Dependabot alerts and security updates
+- Secret scanning with **push protection**
+- Private vulnerability reporting
 
 ## 5. Auto-update signing key (enables in-app updates)
 
