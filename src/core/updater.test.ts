@@ -1,6 +1,11 @@
+import { relaunch } from '@tauri-apps/plugin-process';
 import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type UpdaterBackend, useUpdater } from './updater';
+import { tauriBackend, type UpdaterBackend, useUpdater } from './updater';
+
+// Hoisted, so the lazily imported plugins resolve to these without reloading modules.
+vi.mock('@tauri-apps/plugin-updater', () => ({ check: vi.fn(async () => null) }));
+vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: vi.fn(async () => {}) }));
 
 function fakeUpdate(events: DownloadEvent[] = [], fail?: Error): Update {
   return {
@@ -103,16 +108,9 @@ describe('updater store', () => {
 
 describe('default backend', () => {
   it('delegates to the Tauri updater and process plugins', async () => {
-    vi.doMock('@tauri-apps/plugin-updater', () => ({ check: vi.fn(async () => null) }));
-    vi.doMock('@tauri-apps/plugin-process', () => ({ relaunch: vi.fn(async () => {}) }));
-    vi.resetModules();
-    const { useUpdater: fresh } = await import('./updater');
-    const { backend } = fresh.getState();
-    await expect(backend.check()).resolves.toBeNull();
-    await expect(backend.relaunch()).resolves.toBeUndefined();
-    const { relaunch } = await import('@tauri-apps/plugin-process');
-    expect(relaunch).toHaveBeenCalled();
-    vi.doUnmock('@tauri-apps/plugin-updater');
-    vi.doUnmock('@tauri-apps/plugin-process');
+    expect(useUpdater.getInitialState().backend).toBe(tauriBackend);
+    await expect(tauriBackend.check()).resolves.toBeNull();
+    await expect(tauriBackend.relaunch()).resolves.toBeUndefined();
+    expect(relaunch).toHaveBeenCalledOnce();
   });
 });

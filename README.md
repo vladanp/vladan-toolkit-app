@@ -49,7 +49,7 @@ pnpm new:tool my-tool # scaffold a new tool (add --rust for native code)
 pnpm check            # lint, typecheck, tests (JS + Rust)
 ```
 
-Prerequisites: Node ≥ 22.18, pnpm 12, Rust stable and the
+Prerequisites: Node 26, pnpm 12, Rust stable and the
 [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
 
 - **Architecture, conventions, adding tools:** [CLAUDE.md](CLAUDE.md)
