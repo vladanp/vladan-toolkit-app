@@ -63,9 +63,14 @@ mod tests {
                 cmd: "app_info".into(),
                 callback: tauri::ipc::CallbackFn(0),
                 error: tauri::ipc::CallbackFn(1),
-                url: "tauri://localhost"
-                    .parse()
-                    .unwrap_or_else(|e| panic!("url: {e}")),
+                // The app's own origin; Windows and Android serve it over http.
+                url: if cfg!(any(windows, target_os = "android")) {
+                    "http://tauri.localhost"
+                } else {
+                    "tauri://localhost"
+                }
+                .parse()
+                .unwrap_or_else(|e| panic!("url: {e}")),
                 body: tauri::ipc::InvokeBody::default(),
                 headers: tauri::http::HeaderMap::default(),
                 invoke_key: INVOKE_KEY.to_string(),
