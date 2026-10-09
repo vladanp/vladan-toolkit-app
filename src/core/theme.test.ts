@@ -44,9 +44,9 @@ describe('systemPrefersDark', () => {
 describe('applyTheme', () => {
   it('sets data attributes and color-scheme on the root', () => {
     const root = document.createElement('html');
-    applyTheme('light', 'rose', root);
+    applyTheme('light', 'teal', root);
     expect(root.dataset.theme).toBe('light');
-    expect(root.dataset.accent).toBe('rose');
+    expect(root.dataset.accent).toBe('teal');
     expect(root.style.colorScheme).toBe('light');
   });
 

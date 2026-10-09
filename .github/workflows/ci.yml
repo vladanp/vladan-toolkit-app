@@ -18,8 +18,10 @@ env:
   FORCE_COLOR: 1
 
 jobs:
-  lint:
-    name: Lint, format & typecheck
+  # Two kinds of jobs keep CI lean: one Linux job for everything web, and one job per OS
+  # that compiles the Rust side once for clippy, tests and the real-app E2E run.
+  web:
+    name: Web (lint, unit, E2E)
     runs-on: ubuntu-24.04
     permissions:
       contents: read # check out the repository
@@ -27,135 +29,41 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Commit linting needs the PR's history.
+          fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}
       - uses: $/.github/actions/setup-js
       - run: pnpm biome ci .
       - run: pnpm typecheck
       - name: Scan for committed secrets
         run: pnpm lint:secrets
-
-  commits:
-    name: Conventional commits
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read # check out the repository
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - uses: $/.github/actions/setup-js
+      - name: Writing style (no dashes as punctuation)
+        run: pnpm lint:dashes
       - name: Lint commit messages
+        if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
-
-  test:
-    name: Unit & component tests
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read # check out the repository
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup-js
-      - run: pnpm playwright install --with-deps chromium
-      - name: Test with coverage thresholds
+      # Chromium ≈ WebView2 (Windows); WebKit ≈ WKWebView (macOS) and WebKitGTK (Linux).
+      - run: pnpm playwright install --with-deps chromium webkit
+      - name: Unit & component tests with coverage thresholds
         run: pnpm test:coverage
       - name: Coverage summary
         if: always()
         run: node scripts/coverage-summary.ts coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: coverage-web
-          path: coverage/
-          retention-days: 14
-
-  e2e-web:
-    name: E2E (${{ matrix.browser }})
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read # check out the repository
-    strategy:
-      fail-fast: false
-      matrix:
-        # Chromium ≈ WebView2 (Windows); WebKit ≈ WKWebView (macOS) and WebKitGTK (Linux).
-        browser: [chromium, webkit]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup-js
-      - env:
-          BROWSER: ${{ matrix.browser }}
-        run: pnpm playwright install --with-deps "$BROWSER"
-      - env:
-          BROWSER: ${{ matrix.browser }}
-        run: pnpm test:e2e --project="$BROWSER"
+      - name: End-to-end and accessibility tests (Chromium and WebKit)
+        run: pnpm test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-report-${{ matrix.browser }}
+          name: playwright-report
           path: |
             playwright-report/
             test-results/
-          retention-days: 14
+          retention-days: 7
 
-  rust:
-    name: Rust (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: read # check out the repository
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, macos-latest, windows-latest]
-    defaults:
-      run:
-        shell: bash
-        working-directory: src-tauri
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup-rust
-      - name: Stub frontend build
-        # `generate_context!` embeds ../dist at compile time; clippy and tests don't need the real UI.
-        run: mkdir -p ../dist && echo '<!doctype html>' > ../dist/index.html
-      - run: cargo fmt --check
-        if: runner.os == 'Linux'
-      - run: cargo clippy --all-targets --all-features --locked -- -D warnings
-      - name: Test (includes the "bindings are up to date" check)
-        run: cargo test --locked
-
-  rust-coverage:
-    name: Rust coverage
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: read # check out the repository
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup-rust
-        with:
-          cache-key: coverage
-      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
-        with:
-          tool: cargo-llvm-cov
-      - run: mkdir -p dist && echo '<!doctype html>' > dist/index.html
-      - name: Test with coverage threshold
-        working-directory: src-tauri
-        run: |
-          cargo llvm-cov --locked --ignore-filename-regex 'src/main\.rs' \
-            --fail-under-lines 80 --summary-only | tee coverage.txt
-          { echo '### Rust coverage'; echo '```'; cat coverage.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-
-  e2e-native:
-    name: Native E2E (${{ matrix.os }})
+  desktop:
+    name: Desktop (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read # check out the repository
@@ -173,7 +81,32 @@ jobs:
       - uses: $/.github/actions/setup-js
       - uses: $/.github/actions/setup-rust
         with:
-          cache-key: e2e
+          cache-key: desktop
+      - name: Format
+        if: runner.os == 'Linux'
+        working-directory: src-tauri
+        run: cargo fmt --check
+      - name: Stub frontend build
+        # `generate_context!` embeds ../dist at compile time; clippy and tests don't need the
+        # real UI. The E2E build below replaces it with the real one.
+        run: mkdir -p dist && echo '<!doctype html>' > dist/index.html
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
+      - uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe # v2.87.27
+        if: runner.os == 'Linux'
+        with:
+          tool: cargo-llvm-cov
+      - name: Rust tests (with the coverage threshold on Linux; includes the bindings check)
+        working-directory: src-tauri
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            cargo llvm-cov --locked --ignore-filename-regex 'src/main\.rs' \
+              --fail-under-lines 80 --summary-only | tee coverage.txt
+            { echo '### Rust coverage'; echo '```'; cat coverage.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            cargo test --locked
+          fi
       - name: Build the app with the embedded WebDriver
         run: pnpm e2e:native:build
       - name: Drive the real app
@@ -188,12 +121,12 @@ jobs:
         with:
           name: native-e2e-logs-${{ matrix.os }}
           path: e2e/native/logs/
-          retention-days: 14
+          retention-days: 7
 
   bundle:
     name: Bundle (${{ matrix.name }})
-    # Installers for every merge to main, so main is always shippable and testable.
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Installers on demand (Actions → CI → Run workflow). Releases build their own.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read # check out the repository
@@ -234,7 +167,7 @@ jobs:
     name: CI OK
     # The single required status check for branch protection.
     if: always()
-    needs: [lint, commits, test, e2e-web, rust, rust-coverage, e2e-native, bundle]
+    needs: [web, desktop, bundle]
     runs-on: ubuntu-24.04
     permissions: {}
     steps:

@@ -116,6 +116,8 @@ export function useHotkeys(bindings: HotkeyMap, target: Window = window): void {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // A focused control already handled the key, or an IME is still composing text.
+      if (event.defaultPrevented || event.isComposing) return;
       for (const [shortcut, handler] of Object.entries(ref.current)) {
         if (matchesShortcut(event, shortcut)) {
           event.preventDefault();

@@ -146,7 +146,7 @@ export function SettingsPage() {
               <Kbd shortcut={SHORTCUTS[key]} />
             </Row>
           ))}
-          <Row label="Open tool 1–9">
+          <Row label="Open tools 1 to 9">
             <Kbd shortcut="mod+1" />
           </Row>
         </Section>

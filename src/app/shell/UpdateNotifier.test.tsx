@@ -9,6 +9,7 @@ import {
   CHECK_INTERVAL_MS,
   checkForUpdates,
   FIRST_CHECK_DELAY_MS,
+  installUpdate,
   UpdateNotifier,
 } from './UpdateNotifier';
 
@@ -61,6 +62,22 @@ describe('checkForUpdates', () => {
     expect(document.body.textContent).not.toContain("Couldn't check");
     await checkForUpdates({ silent: false });
     await expect.element(screen.getByText("Couldn't check for updates")).toBeVisible();
+  });
+});
+
+describe('installUpdate', () => {
+  it('shows progress, and the reason when the install fails', async () => {
+    const install = vi.fn(async () => {
+      useUpdater.setState({ status: { kind: 'error', message: 'signature mismatch' } });
+    });
+    useUpdater.setState({ install });
+    const screen = await render(<Toaster />);
+    const pending = installUpdate();
+    await expect.element(screen.getByText('Downloading the update…')).toBeVisible();
+    await pending;
+    await expect.element(screen.getByText("Couldn't install the update")).toBeVisible();
+    await expect.element(screen.getByText('signature mismatch')).toBeVisible();
+    expect(install).toHaveBeenCalledOnce();
   });
 });
 

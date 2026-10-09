@@ -25,7 +25,7 @@ const tools: ToolDefinition[] = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 describe('buildCommands', () => {
-  it('creates an "open" command per tool with ⌘1–9 shortcuts', async () => {
+  it('creates an "open" command per tool with ⌘1 to ⌘9 shortcuts', async () => {
     const a = actions();
     const commands = buildCommands(tools, a);
     const open = commands.filter((c) => c.group === GROUPS.tools);

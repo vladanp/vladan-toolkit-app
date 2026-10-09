@@ -2,7 +2,7 @@ export const THEMES = ['dark', 'light', 'system'] as const;
 export type ThemePreference = (typeof THEMES)[number];
 export type ResolvedTheme = Exclude<ThemePreference, 'system'>;
 
-export const ACCENTS = ['violet', 'blue', 'emerald', 'amber', 'rose'] as const;
+export const ACCENTS = ['ember', 'amber', 'emerald', 'teal', 'blue'] as const;
 export type Accent = (typeof ACCENTS)[number];
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';

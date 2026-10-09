@@ -46,7 +46,7 @@ describe('sanitizeSettings', () => {
   it('keeps valid values', () => {
     const valid = {
       theme: 'light',
-      accent: 'rose',
+      accent: 'teal',
       sidebarCollapsed: true,
       autoCheckUpdates: false,
     };

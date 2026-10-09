@@ -201,10 +201,10 @@ const APP = {
 
 describe('theme', () => {
   it('applies the saved theme and accent to the document', async () => {
-    useSettings.setState({ theme: 'light', accent: 'rose' });
+    useSettings.setState({ theme: 'light', accent: 'teal' });
     await renderApp('/');
     await expect.poll(() => document.documentElement.dataset.theme).toBe('light');
-    expect(document.documentElement.dataset.accent).toBe('rose');
+    expect(document.documentElement.dataset.accent).toBe('teal');
   });
 
   it('syncs the native window theme inside Tauri', async () => {

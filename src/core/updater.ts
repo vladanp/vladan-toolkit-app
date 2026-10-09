@@ -16,7 +16,7 @@ export interface UpdaterBackend {
 }
 
 /** Loaded lazily so the updater code stays out of the startup bundle. */
-const tauriBackend: UpdaterBackend = {
+export const tauriBackend: UpdaterBackend = {
   check: async () => (await import('@tauri-apps/plugin-updater')).check(),
   relaunch: async () => (await import('@tauri-apps/plugin-process')).relaunch(),
 };

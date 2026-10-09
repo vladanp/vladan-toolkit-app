@@ -17,6 +17,8 @@ pre-commit:
       stage_fixed: true
     secrets:
       run: pnpm secretlint --maskSecrets {staged_files}
+    dashes:
+      run: node scripts/check-dashes.ts {staged_files}
     typecheck:
       glob: "*.{ts,tsx}"
       run: pnpm typecheck
@@ -30,7 +32,7 @@ pre-push:
   parallel: true
   commands:
     lint:
-      run: pnpm biome ci .
+      run: pnpm biome ci . && pnpm lint:dashes
     unit-tests:
       run: pnpm test:unit
     rust-lint:

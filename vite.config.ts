@@ -63,6 +63,7 @@ export default defineConfig({
         'src/vite-env.d.ts',
         'src/bindings.ts',
         'scripts/new-tool.ts',
+        'scripts/check-dashes.ts',
         'scripts/coverage-summary.ts',
         'scripts/updater-config.ts',
       ],

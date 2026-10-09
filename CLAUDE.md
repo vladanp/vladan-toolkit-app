@@ -53,7 +53,7 @@ scripts/          tool generator, CI helpers (tested)
 
 1. `pnpm new:tool json-formatter --name "JSON Formatter"` (add `--rust` if it needs native code).
    Creates `src/tools/json-formatter/{index.ts,JsonFormatter.tsx,JsonFormatter.test.tsx}`.
-   That's all it takes to register it: sidebar, home, ⌘K and ⌘1–9 pick it up automatically.
+   That's all it takes to register it: sidebar, home, ⌘K and ⌘1 to ⌘9 pick it up automatically.
 2. Edit `index.ts`: a real `description`, a lucide `icon`, `keywords`, optional `order`,
    `layout: 'full'` for editor-like tools, and `commands` to add ⌘K actions.
 3. Native code (`--rust`): the generator adds `src-tauri/src/tools/<snake>.rs` and registers
@@ -72,8 +72,11 @@ reference implementation of a Rust-backed tool.
 ## Conventions
 
 - **Design**: dark-first, minimal. Use the semantic tokens only (`bg-canvas`, `bg-surface`,
-  `text-fg-muted`, `border-line`, `bg-accent`, `text-accent-text`, …) — no raw colors. Every
+  `text-fg-muted`, `border-line`, `bg-accent`, `text-accent-text`, …), never raw colors. Every
   pairing must stay ≥ 4.5:1; the axe E2E scans fail otherwise. Desktop density: 13px base.
+- **Writing**: no em dashes, en dashes or spaced hyphens as punctuation in docs, comments,
+  UI text, commit messages or PR text. Use a period, comma, colon or parentheses instead.
+  `pnpm lint:dashes` enforces it for files (pre-commit, pre-push and CI).
 - **Accessibility**: real roles/labels; shortcuts via `aria-keyshortcuts` with decorative `<Kbd>`.
 - **TypeScript**: strict, no `any`, no non-null `!`. Biome formats and lints (`pnpm lint:fix`).
 - **Rust**: `unsafe` is forbidden; clippy pedantic with `-D warnings`; no `unwrap`/`expect`
@@ -94,9 +97,11 @@ reference implementation of a Rust-backed tool.
 
 ## CI/CD (all automatic)
 
-- **CI** (`ci.yml`): lint/typecheck/secret scan, unit+component tests with coverage, Playwright
-  in Chromium+WebKit, Rust clippy/tests on all 3 OSes, Rust coverage ≥80%, native E2E on all
-  3 OSes, installers built for every push to main. `CI OK` is the single required check.
+- **CI** (`ci.yml`), kept lean on purpose: one `web` job (lint, typecheck, secret scan, dash
+  check, commitlint, unit+component tests with coverage, Playwright in Chromium+WebKit) and one
+  `desktop` job per OS (clippy, Rust tests with ≥80% coverage on Linux, native E2E), each
+  compiling Rust once. Installers build only for releases, or on demand via "Run workflow".
+  `CI OK` is the single required check. Don't add jobs when a step in an existing job will do.
 - **Security**: CodeQL (actions, JS/TS, Rust), dependency review, pnpm audit, cargo-deny,
   zizmor, OpenSSF Scorecard, Dependabot (7-day cooldown, auto-merge for patch/minor).
 - **Release** (`release.yml`): release-please keeps a release PR up to date; merging it

@@ -2,7 +2,7 @@
 
 ## Setup
 
-Requirements: Node ≥ 22.18, pnpm 12 (`corepack enable` or `npm i -g pnpm`), Rust stable, and
+Requirements: Node 26, pnpm 12 (`corepack enable` or `npm i -g pnpm`), Rust stable, and
 the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ```sh

@@ -30,9 +30,9 @@ can't be set from code. Do these once, in order. Each takes under a minute.
 
 ## 4. Security features
 
-**Settings → Advanced Security** — enable everything that's offered for public repos:
+**Settings → Advanced Security**: enable everything that's offered for public repos:
 
-- **Dependency graph** — required: the `Security / Dependency review` check fails without it
+- **Dependency graph** (required: the `Security / Dependency review` check fails without it)
 - Dependabot alerts and security updates
 - Secret scanning with **push protection**
 - Private vulnerability reporting
@@ -49,22 +49,23 @@ Then **Settings → Environments → New environment** named **`release`**:
 
 - *Deployment branches and tags:* **Selected branches and tags** → add `main` and tags `v*`
 - *Environment secrets:*
-  - `TAURI_SIGNING_PRIVATE_KEY` — contents of `~/.tauri/vladan-toolkit.key`
-  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — the password you chose
+  - `TAURI_SIGNING_PRIVATE_KEY`: contents of `~/.tauri/vladan-toolkit.key`
+  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: the password you chose
 - *Environment variables:*
-  - `TAURI_UPDATER_PUBKEY` — contents of `~/.tauri/vladan-toolkit.key.pub`
+  - `TAURI_UPDATER_PUBKEY`: contents of `~/.tauri/vladan-toolkit.key.pub`
 
 Back up the private key (e.g. in a password manager): if it's lost, already-installed apps
 can no longer verify new updates.
 
 Until this is done, releases still build installers; they just don't include update bundles.
 
-## 6. (Optional) Let CI run on release PRs
+## 6. Let CI run on release PRs
 
 PRs created with the default `GITHUB_TOKEN` don't trigger other workflows, so the release
-PR shows no checks. To fix that, create a fine-grained token (this repo only; *Contents* and
-*Pull requests*: read & write) and save it as the `RELEASE_PLEASE_TOKEN` secret in the
-`release` environment.
+PR would never get the `CI OK` check that step 3 requires, and could not be merged. Create a
+fine-grained token (this repo only; *Contents* and *Pull requests*: read & write) and save it
+as the `RELEASE_PLEASE_TOKEN` secret in the `release` environment. It expires: renew it
+before then.
 
 ## 7. (Optional) Code signing
 
@@ -74,5 +75,5 @@ Unsigned installers work: macOS asks to right-click → Open once, Windows Smart
 - **macOS** (Apple Developer Program): add `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
   `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` to the `release`
   environment. The release workflow signs and notarizes automatically when they exist.
-- **Windows**: Azure Trusted Signing needs a `signCommand` in `tauri.conf.json` — ask for it
+- **Windows**: Azure Trusted Signing needs a `signCommand` in `tauri.conf.json`. Ask for it
   when you get there.

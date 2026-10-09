@@ -72,7 +72,7 @@ fn create_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .min_inner_size(760.0, 520.0)
         .center()
         // Matches `--vt-canvas` so there is no white flash before the UI paints.
-        .background_color(Color(10, 10, 11, 255));
+        .background_color(Color(11, 10, 8, 255));
 
     #[cfg(target_os = "macos")]
     let builder = builder

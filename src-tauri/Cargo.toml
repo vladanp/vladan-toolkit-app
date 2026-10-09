@@ -6,7 +6,7 @@ authors = ["Vladan Petrovic"]
 license = "MIT"
 repository = "https://github.com/vladanp/vladan-toolkit-app"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.99"
 publish = false
 
 [lib]
