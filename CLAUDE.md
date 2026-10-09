@@ -97,9 +97,11 @@ reference implementation of a Rust-backed tool.
 
 ## CI/CD (all automatic)
 
-- **CI** (`ci.yml`): lint/typecheck/secret scan, unit+component tests with coverage, Playwright
-  in Chromium+WebKit, Rust clippy/tests on all 3 OSes, Rust coverage ≥80%, native E2E on all
-  3 OSes, installers built for every push to main. `CI OK` is the single required check.
+- **CI** (`ci.yml`), kept lean on purpose: one `web` job (lint, typecheck, secret scan, dash
+  check, commitlint, unit+component tests with coverage, Playwright in Chromium+WebKit) and one
+  `desktop` job per OS (clippy, Rust tests with ≥80% coverage on Linux, native E2E), each
+  compiling Rust once. Installers build only for releases, or on demand via "Run workflow".
+  `CI OK` is the single required check. Don't add jobs when a step in an existing job will do.
 - **Security**: CodeQL (actions, JS/TS, Rust), dependency review, pnpm audit, cargo-deny,
   zizmor, OpenSSF Scorecard, Dependabot (7-day cooldown, auto-merge for patch/minor).
 - **Release** (`release.yml`): release-please keeps a release PR up to date; merging it
