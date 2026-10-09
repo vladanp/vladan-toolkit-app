@@ -9,7 +9,7 @@
   "draft": true,
   "force-tag-creation": true,
   "pull-request-title-pattern": "chore: release v${version}",
-  "pull-request-header": ":rocket: Merging this PR publishes **Vladan Toolkit v${version}**: it tags the release, builds signed installers for macOS, Windows and Linux, and ships the update to installed apps.",
+  "pull-request-header": ":rocket: Merging this PR publishes the release below: it tags it, builds installers for macOS, Windows and Linux with signed update bundles, and ships the update to installed apps.",
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
