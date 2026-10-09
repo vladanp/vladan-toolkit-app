@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, press } from './helpers';
 
+// Scans measure final colors; reduced motion (honored by the app's CSS) shortens entrance
+// transitions so they can't race the scan on slow runners.
+test.use({ reducedMotion: 'reduce' });
+
 for (const theme of ['dark', 'light'] as const) {
   test.describe(`${theme} theme`, () => {
     test.beforeEach(async ({ page }) => {
@@ -22,8 +26,6 @@ for (const theme of ['dark', 'light'] as const) {
         await page.goto(path);
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await expect(page.locator('main h1')).toBeVisible();
-        // Let entrance animations finish so contrast is measured on final colors.
-        await page.waitForTimeout(300);
         await expectAccessible(page);
       });
     }
@@ -32,7 +34,6 @@ for (const theme of ['dark', 'light'] as const) {
       await page.goto('/');
       await press(page, 'Mod+k');
       await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
-      await page.waitForTimeout(300);
       await expectAccessible(page);
     });
   });

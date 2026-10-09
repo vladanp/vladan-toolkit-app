@@ -21,8 +21,25 @@ export function trackErrors(page: Page): string[] {
   return errors;
 }
 
-/** WCAG 2.2 AA scan of the current page state. */
+/**
+ * Waits until every finite CSS transition/animation has finished. Scanning mid fade-in
+ * would measure semi-transparent text and report false contrast failures.
+ */
+export async function settle(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== 'running' ||
+          animation.effect?.getTiming().iterations === Number.POSITIVE_INFINITY,
+      ),
+  );
+}
+
+/** WCAG 2.2 AA scan of the current page state, once it has settled. */
 export async function expectAccessible(page: Page): Promise<void> {
+  await settle(page);
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
