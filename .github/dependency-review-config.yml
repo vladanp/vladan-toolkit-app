@@ -27,6 +27,14 @@ allow-licenses:
   - OFL-1.1 # bundled UI fonts (Inter, JetBrains Mono)
   - CC-BY-3.0 # spdx-exceptions data
   - CC-BY-4.0 # caniuse-lite data
+  - CDLA-Permissive-2.0 # webpki-root-certs (Mozilla's CA certificate data)
+
+# These crates declare "A/B" (pre-SPDX syntax for "A OR B") in Cargo.toml, which GitHub
+# can't parse. Both options are on the allow-list above; cargo-deny verifies them properly.
+allow-dependencies-licenses:
+  - pkg:cargo/brotli-decompressor # BSD-3-Clause/MIT
+  - pkg:cargo/dbus # Apache-2.0/MIT
+  - pkg:cargo/libdbus-sys # Apache-2.0/MIT
 
 # Accepted risks: only advisories with no fixed version reachable from our dependency tree.
 # Revisit when upstream moves; remove the entry as soon as a fix is available.
