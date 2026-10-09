@@ -1,0 +1,233 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/*
+ * Design tokens.
+ * Dark-first, minimal surfaces separated by hairline borders and one accent color.
+ * Components only use the semantic utilities below (bg-canvas, text-fg-muted,
+ * border-line, bg-accent, ...), never raw palette colors, so themes stay consistent.
+ *
+ * Every text/background pairing meets WCAG 2.2 AA (4.5:1), verified by the axe scans in
+ * `e2e/web/a11y.spec.ts`. Keep it that way when adjusting values.
+ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-canvas: var(--vt-canvas);
+  --color-panel: var(--vt-panel);
+  --color-surface: var(--vt-surface);
+  --color-elevated: var(--vt-elevated);
+  --color-hover: var(--vt-hover);
+  --color-active: var(--vt-active);
+  --color-line: var(--vt-line);
+  --color-line-strong: var(--vt-line-strong);
+  --color-fg: var(--vt-fg);
+  --color-fg-muted: var(--vt-fg-muted);
+  --color-fg-subtle: var(--vt-fg-subtle);
+  --color-accent: var(--vt-accent);
+  --color-accent-fg: var(--vt-accent-fg);
+  --color-accent-text: var(--vt-accent-text);
+  --color-accent-soft: var(--vt-accent-soft);
+  --color-danger: var(--vt-danger);
+  --color-success: var(--vt-success);
+  --color-warning: var(--vt-warning);
+
+  --shadow-popover: var(--vt-shadow-popover);
+}
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --vt-canvas: #0a0a0b;
+  --vt-panel: #0d0d0f;
+  --vt-surface: #111113;
+  --vt-elevated: #161619;
+  --vt-hover: #1a1a1d;
+  --vt-active: #212125;
+  --vt-line: #1c1c1f;
+  --vt-line-strong: #2a2a2f;
+  --vt-fg: #ededef;
+  --vt-fg-muted: #a0a0ab;
+  --vt-fg-subtle: #8a8a95;
+  --vt-danger: #f2555a;
+  --vt-success: #3dd68c;
+  --vt-warning: #f5a524;
+  --vt-accent-text-l: 0.7;
+  --vt-shadow-popover: 0 0 0 1px rgb(255 255 255 / 0.06), 0 16px 48px -8px rgb(0 0 0 / 0.7);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --vt-canvas: #ffffff;
+  --vt-panel: #fafafa;
+  --vt-surface: #ffffff;
+  --vt-elevated: #ffffff;
+  --vt-hover: #f4f4f5;
+  --vt-active: #ebebed;
+  --vt-line: #ececee;
+  --vt-line-strong: #dcdce0;
+  --vt-fg: #0a0a0b;
+  --vt-fg-muted: #52525b;
+  --vt-fg-subtle: #66666f;
+  --vt-danger: #c8242c;
+  --vt-success: #0e8a50;
+  --vt-warning: #9a5f00;
+  --vt-accent-text-l: 0.48;
+  --vt-shadow-popover: 0 0 0 1px rgb(0 0 0 / 0.06), 0 16px 48px -12px rgb(0 0 0 / 0.25);
+}
+
+/*
+ * Accents are a hue + chroma. Three roles are derived from them:
+ *   --vt-accent       fills (buttons, switches, logo), paired with --vt-accent-fg text
+ *   --vt-accent-text  accent-colored text and icons; lightness depends on the theme
+ *   --vt-accent-soft  tints (selection)
+ * The derivation lives on `[data-accent]` so any element with that attribute (e.g. the
+ * swatches in Settings) renders its own accent, not the inherited one.
+ */
+:root,
+[data-accent] {
+  --vt-accent: oklch(0.57 var(--vt-accent-c) var(--vt-accent-h));
+  --vt-accent-fg: #ffffff;
+  --vt-accent-text: oklch(var(--vt-accent-text-l) var(--vt-accent-c) var(--vt-accent-h));
+  --vt-accent-soft: color-mix(in oklab, var(--vt-accent) 22%, transparent);
+}
+:root,
+[data-accent="violet"] {
+  --vt-accent-h: 292;
+  --vt-accent-c: 0.2;
+}
+[data-accent="blue"] {
+  --vt-accent-h: 255;
+  --vt-accent-c: 0.18;
+}
+[data-accent="emerald"] {
+  --vt-accent-h: 162;
+  --vt-accent-c: 0.15;
+  --vt-accent: oklch(0.53 0.15 162);
+}
+[data-accent="amber"] {
+  --vt-accent-h: 70;
+  --vt-accent-c: 0.16;
+  /* Amber stays bright and takes dark text, like a warning sign. */
+  --vt-accent: oklch(0.76 0.16 70);
+  --vt-accent-fg: #0a0a0b;
+}
+[data-accent="rose"] {
+  --vt-accent-h: 12;
+  --vt-accent-c: 0.21;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* Own stacking context so Base UI popups always layer above page content. */
+  #root {
+    isolation: isolate;
+  }
+
+  html {
+    /* Desktop apps don't rubber-band or zoom on pinch. */
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-fg antialiased;
+    font-size: 13px;
+    line-height: 1.5;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    text-rendering: optimizeLegibility;
+    /* App chrome is not selectable; content opts back in with `select-text`. */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  ::selection {
+    background: var(--vt-accent-soft);
+  }
+
+  /* Native desktop convention: buttons use the arrow cursor. */
+  button,
+  [role="button"],
+  [role="option"],
+  [role="menuitem"] {
+    cursor: default;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--vt-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--vt-line-strong) transparent;
+  }
+}
+
+@layer utilities {
+  .select-text {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .animate-pop-in {
+    animation: vt-pop-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-fade-in {
+    animation: vt-fade-in 140ms ease-out;
+  }
+
+  .animate-page-in {
+    animation: vt-page-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes vt-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must override every component animation. */
+    animation-duration: 1ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must override every component transition. */
+    transition-duration: 1ms !important;
+  }
+}
