@@ -59,12 +59,13 @@ can no longer verify new updates.
 
 Until this is done, releases still build installers; they just don't include update bundles.
 
-## 6. (Optional) Let CI run on release PRs
+## 6. Let CI run on release PRs
 
 PRs created with the default `GITHUB_TOKEN` don't trigger other workflows, so the release
-PR shows no checks. To fix that, create a fine-grained token (this repo only; *Contents* and
-*Pull requests*: read & write) and save it as the `RELEASE_PLEASE_TOKEN` secret in the
-`release` environment.
+PR would never get the `CI OK` check that step 3 requires, and could not be merged. Create a
+fine-grained token (this repo only; *Contents* and *Pull requests*: read & write) and save it
+as the `RELEASE_PLEASE_TOKEN` secret in the `release` environment. It expires: renew it
+before then.
 
 ## 7. (Optional) Code signing
 
