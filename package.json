@@ -15,6 +15,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "lint:secrets": "secretlint \"**/*\"",
+    "lint:dashes": "node scripts/check-dashes.ts",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:watch": "vitest",
@@ -25,7 +26,7 @@
     "e2e:native": "wdio run e2e/native/wdio.conf.ts",
     "lint:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
     "bindings": "UPDATE_BINDINGS=1 cargo test --manifest-path src-tauri/Cargo.toml bindings_are_up_to_date",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm lint:rust && pnpm test:rust",
+    "check": "pnpm lint && pnpm lint:dashes && pnpm typecheck && pnpm test && pnpm lint:rust && pnpm test:rust",
     "new:tool": "node scripts/new-tool.ts",
     "prepare": "lefthook install",
     "tauri": "tauri"

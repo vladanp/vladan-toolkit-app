@@ -10,7 +10,7 @@ export interface InfoGroup {
   items: InfoItem[];
 }
 
-const UNKNOWN = '—';
+const UNKNOWN = 'Unknown';
 
 export function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes <= 0) return UNKNOWN;

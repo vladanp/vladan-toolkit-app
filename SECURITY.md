@@ -20,5 +20,5 @@ the easiest way to stay current.
   GitHub dependency review gate every change.
 - **Build**: GitHub Actions pinned by commit SHA and linted with zizmor; CodeQL and OpenSSF
   Scorecard run continuously; release signing keys live in a protected environment; every
-  installer ships with SLSA build provenance — verify one with
+  installer ships with SLSA build provenance. Verify one with
   `gh attestation verify <file> --repo vladanp/vladan-toolkit-app`.

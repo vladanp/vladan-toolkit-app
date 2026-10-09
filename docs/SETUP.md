@@ -30,9 +30,9 @@ can't be set from code. Do these once, in order. Each takes under a minute.
 
 ## 4. Security features
 
-**Settings → Advanced Security** — enable everything that's offered for public repos:
+**Settings → Advanced Security**: enable everything that's offered for public repos:
 
-- **Dependency graph** — required: the `Security / Dependency review` check fails without it
+- **Dependency graph** (required: the `Security / Dependency review` check fails without it)
 - Dependabot alerts and security updates
 - Secret scanning with **push protection**
 - Private vulnerability reporting
@@ -49,10 +49,10 @@ Then **Settings → Environments → New environment** named **`release`**:
 
 - *Deployment branches and tags:* **Selected branches and tags** → add `main` and tags `v*`
 - *Environment secrets:*
-  - `TAURI_SIGNING_PRIVATE_KEY` — contents of `~/.tauri/vladan-toolkit.key`
-  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — the password you chose
+  - `TAURI_SIGNING_PRIVATE_KEY`: contents of `~/.tauri/vladan-toolkit.key`
+  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: the password you chose
 - *Environment variables:*
-  - `TAURI_UPDATER_PUBKEY` — contents of `~/.tauri/vladan-toolkit.key.pub`
+  - `TAURI_UPDATER_PUBKEY`: contents of `~/.tauri/vladan-toolkit.key.pub`
 
 Back up the private key (e.g. in a password manager): if it's lost, already-installed apps
 can no longer verify new updates.
@@ -75,5 +75,5 @@ Unsigned installers work: macOS asks to right-click → Open once, Windows Smart
 - **macOS** (Apple Developer Program): add `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
   `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` to the `release`
   environment. The release workflow signs and notarizes automatically when they exist.
-- **Windows**: Azure Trusted Signing needs a `signCommand` in `tauri.conf.json` — ask for it
+- **Windows**: Azure Trusted Signing needs a `signCommand` in `tauri.conf.json`. Ask for it
   when you get there.

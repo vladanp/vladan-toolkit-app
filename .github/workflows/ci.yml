@@ -32,6 +32,8 @@ jobs:
       - run: pnpm typecheck
       - name: Scan for committed secrets
         run: pnpm lint:secrets
+      - name: Writing style (no dashes as punctuation)
+        run: pnpm lint:dashes
 
   commits:
     name: Conventional commits

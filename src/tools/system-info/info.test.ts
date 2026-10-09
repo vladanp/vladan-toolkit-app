@@ -8,9 +8,9 @@ describe('formatBytes', () => {
     [1536, '1.5 KB'],
     [16 * 1024 ** 3, '16.0 GB'],
     [3 * 1024 ** 5, '3072.0 TB'],
-    [0, '—'],
-    [null, '—'],
-    [Number.NaN, '—'],
+    [0, 'Unknown'],
+    [null, 'Unknown'],
+    [Number.NaN, 'Unknown'],
   ])('%s → %s', (input, expected) => {
     expect(formatBytes(input)).toBe(expected);
   });
@@ -21,8 +21,8 @@ describe('formatDuration', () => {
     [59, '0m'],
     [3_900, '1h 5m'],
     [2 * 86_400 + 3 * 3_600, '2d 3h'],
-    [-1, '—'],
-    [undefined, '—'],
+    [-1, 'Unknown'],
+    [undefined, 'Unknown'],
   ])('%s s → %s', (input, expected) => {
     expect(formatDuration(input)).toBe(expected);
   });
@@ -67,7 +67,7 @@ describe('loadInfoGroups', () => {
     const groups = await loadInfoGroups();
     const items = groups.flatMap((g) => g.items);
     expect(items).toContainEqual({ label: 'Cores', value: '2 logical' });
-    expect(items).toContainEqual({ label: 'Name', value: '—' });
+    expect(items).toContainEqual({ label: 'Name', value: 'Unknown' });
   });
 });
 
