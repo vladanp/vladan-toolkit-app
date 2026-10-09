@@ -100,6 +100,23 @@ describe('useHotkeys', () => {
     expect(onK).toHaveBeenCalledOnce();
   });
 
+  it('leaves keys alone that a control handled or an IME is composing', () => {
+    const onK = vi.fn();
+    const { unmount } = renderHook(() => useHotkeys({ 'mod+k': onK }));
+    const input = document.createElement('input');
+    document.body.append(input);
+    input.addEventListener('keydown', (event) => event.preventDefault());
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }),
+    );
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, isComposing: true }),
+    );
+    expect(onK).not.toHaveBeenCalled();
+    input.remove();
+    unmount();
+  });
+
   it('always uses the latest handlers without re-subscribing', () => {
     const first = vi.fn();
     const second = vi.fn();
