@@ -22,8 +22,16 @@ and Linux, built to grow one tool at a time.
 
 Grab the installer for your system from the
 [latest release](https://github.com/vladanp/vladan-toolkit-app/releases/latest):
-`.dmg` (macOS, Apple Silicon + Intel), `.msi`/`.exe` (Windows), `.AppImage`/`.deb`/`.rpm` (Linux).
-After that, the app keeps itself up to date.
+
+| System | File | Notes |
+| --- | --- | --- |
+| Windows 10/11 | `Vladan.Toolkit_x.y.z_x64-setup.exe` | Installs for your user only, no admin rights needed. The `.msi` is for machine-wide installs. |
+| macOS 13+ | `Vladan.Toolkit_x.y.z_universal.dmg` | Apple Silicon and Intel. |
+| Linux | `.AppImage`, `.deb` or `.rpm` | The AppImage runs on any distribution; `.deb` and `.rpm` integrate with your package manager. |
+
+The installers are not code signed yet, so the first launch shows a warning once.
+On Windows, click **More info → Run anyway**. On macOS, right-click the app and choose
+**Open**. After that, the app checks for updates and installs them itself.
 
 ## Using it
 

@@ -10,6 +10,10 @@ name: Release
 on:
   push:
     branches: [main]
+  schedule:
+    # Merges made with the built-in token (Dependabot auto-merge) start no workflows, so
+    # also refresh the release PR daily to pick those changes up.
+    - cron: '41 6 * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -112,6 +116,9 @@ jobs:
           releaseDraft: true
           tauriScript: pnpm tauri
           args: ${{ matrix.args }} ${{ steps.updater.outputs.args }}
+          # Fallback updater entry for Windows: the per-user setup.exe (the recommended
+          # download). Installs from the .msi still update through their own entry.
+          updaterJsonPreferNsis: true
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
