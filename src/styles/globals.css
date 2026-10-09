@@ -5,6 +5,8 @@
 /*
  * Design tokens.
  * Dark-first, minimal surfaces separated by hairline borders and one accent color.
+ * Neutrals are warm (a faint stone tint instead of blue-grey), light mode is a soft
+ * off-white rather than stark white, and the default accent is a warm ember orange.
  * Components only use the semantic utilities below (bg-canvas, text-fg-muted,
  * border-line, bg-accent, ...), never raw palette colors, so themes stay consistent.
  *
@@ -43,46 +45,46 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --vt-canvas: #0a0a0b;
-  --vt-panel: #0d0d0f;
-  --vt-surface: #111113;
-  --vt-elevated: #161619;
-  --vt-hover: #1a1a1d;
-  --vt-active: #212125;
-  --vt-line: #1c1c1f;
-  --vt-line-strong: #2a2a2f;
-  --vt-fg: #ededef;
-  --vt-fg-muted: #a0a0ab;
-  --vt-fg-subtle: #8a8a95;
-  --vt-danger: #f2555a;
-  --vt-success: #3dd68c;
-  --vt-warning: #f5a524;
-  --vt-accent-text-l: 0.7;
+  --vt-canvas: #0b0a08;
+  --vt-panel: #0f0d0c;
+  --vt-surface: #13110f;
+  --vt-elevated: #191715;
+  --vt-hover: #1c1a18;
+  --vt-active: #24211e;
+  --vt-line: #201e1b;
+  --vt-line-strong: #302d2a;
+  --vt-fg: #f3f0ea;
+  --vt-fg-muted: #b5b0aa;
+  --vt-fg-subtle: #9d9790;
+  --vt-danger: #f75d59;
+  --vt-success: #46ce83;
+  --vt-warning: #f5ae39;
+  --vt-accent-text-l: 0.72;
   --vt-shadow-popover: 0 0 0 1px rgb(255 255 255 / 0.06), 0 16px 48px -8px rgb(0 0 0 / 0.7);
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --vt-canvas: #ffffff;
-  --vt-panel: #fafafa;
-  --vt-surface: #ffffff;
+  --vt-canvas: #faf9f6;
+  --vt-panel: #f5f4f0;
+  --vt-surface: #fdfcfb;
   --vt-elevated: #ffffff;
-  --vt-hover: #f4f4f5;
-  --vt-active: #ebebed;
-  --vt-line: #ececee;
-  --vt-line-strong: #dcdce0;
-  --vt-fg: #0a0a0b;
-  --vt-fg-muted: #52525b;
-  --vt-fg-subtle: #66666f;
-  --vt-danger: #c8242c;
-  --vt-success: #0e8a50;
-  --vt-warning: #9a5f00;
-  --vt-accent-text-l: 0.48;
+  --vt-hover: #efece8;
+  --vt-active: #e5e3dd;
+  --vt-line: #e8e6e2;
+  --vt-line-strong: #d5d2cd;
+  --vt-fg: #1a1512;
+  --vt-fg-muted: #58514c;
+  --vt-fg-subtle: #69625d;
+  --vt-danger: #be222a;
+  --vt-success: #00733c;
+  --vt-warning: #915700;
+  --vt-accent-text-l: 0.47;
   --vt-shadow-popover: 0 0 0 1px rgb(0 0 0 / 0.06), 0 16px 48px -12px rgb(0 0 0 / 0.25);
 }
 
 /*
- * Accents are a hue + chroma. Three roles are derived from them:
+ * Accents are a hue, chroma and fill lightness. Three roles are derived from them:
  *   --vt-accent       fills (buttons, switches, logo), paired with --vt-accent-fg text
  *   --vt-accent-text  accent-colored text and icons; lightness depends on the theme
  *   --vt-accent-soft  tints (selection)
@@ -91,35 +93,38 @@
  */
 :root,
 [data-accent] {
-  --vt-accent: oklch(0.57 var(--vt-accent-c) var(--vt-accent-h));
+  --vt-accent: oklch(var(--vt-accent-l) var(--vt-accent-c) var(--vt-accent-h));
   --vt-accent-fg: #ffffff;
   --vt-accent-text: oklch(var(--vt-accent-text-l) var(--vt-accent-c) var(--vt-accent-h));
   --vt-accent-soft: color-mix(in oklab, var(--vt-accent) 22%, transparent);
 }
 :root,
-[data-accent="violet"] {
-  --vt-accent-h: 292;
-  --vt-accent-c: 0.2;
-}
-[data-accent="blue"] {
-  --vt-accent-h: 255;
-  --vt-accent-c: 0.18;
-}
-[data-accent="emerald"] {
-  --vt-accent-h: 162;
-  --vt-accent-c: 0.15;
-  --vt-accent: oklch(0.53 0.15 162);
+[data-accent="ember"] {
+  --vt-accent-h: 38;
+  --vt-accent-c: 0.19;
+  --vt-accent-l: 0.575;
 }
 [data-accent="amber"] {
-  --vt-accent-h: 70;
+  --vt-accent-h: 72;
   --vt-accent-c: 0.16;
   /* Amber stays bright and takes dark text, like a warning sign. */
-  --vt-accent: oklch(0.76 0.16 70);
-  --vt-accent-fg: #0a0a0b;
+  --vt-accent-l: 0.78;
+  --vt-accent-fg: #0b0a08;
 }
-[data-accent="rose"] {
-  --vt-accent-h: 12;
-  --vt-accent-c: 0.21;
+[data-accent="emerald"] {
+  --vt-accent-h: 160;
+  --vt-accent-c: 0.15;
+  --vt-accent-l: 0.53;
+}
+[data-accent="teal"] {
+  --vt-accent-h: 195;
+  --vt-accent-c: 0.12;
+  --vt-accent-l: 0.52;
+}
+[data-accent="blue"] {
+  --vt-accent-h: 252;
+  --vt-accent-c: 0.18;
+  --vt-accent-l: 0.56;
 }
 
 @layer base {

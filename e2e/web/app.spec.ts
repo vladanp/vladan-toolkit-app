@@ -39,12 +39,12 @@ test('tool shortcuts and navigation history', async ({ page }) => {
 test('appearance settings persist across restarts', async ({ page }) => {
   await page.goto('/#/settings');
   await page.getByRole('button', { name: 'Light' }).click();
-  await page.getByRole('radio', { name: 'rose' }).click();
+  await page.getByRole('radio', { name: 'teal' }).click();
   await press(page, 'Mod+b');
   await page.reload();
   const html = page.locator('html');
   await expect(html).toHaveAttribute('data-theme', 'light');
-  await expect(html).toHaveAttribute('data-accent', 'rose');
+  await expect(html).toHaveAttribute('data-accent', 'teal');
   await expect(page.getByRole('navigation', { name: 'Main' })).toHaveAttribute(
     'data-collapsed',
     'true',

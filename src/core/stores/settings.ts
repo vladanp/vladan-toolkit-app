@@ -16,7 +16,7 @@ export interface SettingsState {
 
 export const DEFAULT_SETTINGS = {
   theme: 'dark',
-  accent: 'violet',
+  accent: 'ember',
   sidebarCollapsed: false,
   autoCheckUpdates: true,
 } as const satisfies Partial<SettingsState>;

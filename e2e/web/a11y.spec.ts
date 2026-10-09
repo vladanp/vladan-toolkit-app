@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { ACCENTS } from '../../src/core/theme';
 import { expectAccessible, press } from './helpers';
 
 // Scans measure final colors; reduced motion (honored by the app's CSS) shortens entrance
@@ -38,3 +39,32 @@ for (const theme of ['dark', 'light'] as const) {
     });
   });
 }
+
+test.describe('accent colors', () => {
+  for (const theme of ['dark', 'light'] as const) {
+    for (const accent of ACCENTS) {
+      test(`${accent} in the ${theme} theme meets WCAG 2.2 AA`, async ({ page }) => {
+        await page.addInitScript(
+          ([themeValue, accentValue]) => {
+            localStorage.setItem(
+              'vt:settings',
+              JSON.stringify({ state: { theme: themeValue, accent: accentValue }, version: 1 }),
+            );
+          },
+          [theme, accent] as const,
+        );
+        // The not found page has accent-colored link text; the sample adds an accent fill
+        // with its paired text, as on primary buttons.
+        await page.goto('/#/nope');
+        await expect(page.locator('html')).toHaveAttribute('data-accent', accent);
+        await page.evaluate(() => {
+          const sample = document.createElement('button');
+          sample.className = 'bg-accent px-2 text-accent-fg';
+          sample.textContent = 'Primary action';
+          document.querySelector('main')?.append(sample);
+        });
+        await expectAccessible(page);
+      });
+    }
+  }
+});
