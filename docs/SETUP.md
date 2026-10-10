@@ -69,11 +69,32 @@ before then.
 
 ## 7. (Optional) Code signing
 
-Unsigned installers work: macOS asks to right-click → Open once, Windows SmartScreen shows
-"More info → Run anyway". To remove those prompts later:
+Two different signatures are involved:
 
-- **macOS** (Apple Developer Program): add `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
-  `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` to the `release`
-  environment. The release workflow signs and notarizes automatically when they exist.
-- **Windows**: Azure Trusted Signing needs a `signCommand` in `tauri.conf.json`. Ask for it
-  when you get there.
+- **Update signing** (step 5, free): proves an update came from you. The app refuses updates
+  that aren't signed with your key. Windows and macOS don't know about this key.
+- **Code signing** (this step, paid): proves to Windows and macOS who published the installer.
+  Without it, the first install shows a warning once (see the README). Updates installed by
+  the app itself are downloaded by the app, not a browser, so they don't show it again.
+
+To remove the first-install warning:
+
+- **macOS:** join the Apple Developer Program (yearly fee), create a "Developer ID
+  Application" certificate, and add `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
+  `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password) and
+  `APPLE_TEAM_ID` to the `release` environment. The release workflow then signs and
+  notarizes automatically, and macOS opens the app without any warning. Until then the app
+  is ad-hoc signed (`signingIdentity: "-"`), which keeps Apple Silicon from calling it
+  "damaged" but still needs **Open Anyway** once.
+- **Windows:** SmartScreen trusts a signed app once it has built up download reputation, so
+  even a signed installer can warn for its first releases; the warning then names you as
+  the publisher. Options:
+  - [SignPath Foundation](https://signpath.org): free for open source projects like this
+    one (MIT, built in GitHub Actions). The certificate is issued to SignPath Foundation, and
+    you publish a short code signing policy.
+  - [Azure Artifact Signing](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options):
+    a monthly fee; open to organizations in more countries, but to individuals only in some.
+  - A certificate from a certificate authority; the private key must live on a hardware token
+    or a cloud signing service.
+
+  Each plugs into Tauri's `bundle.windows.signCommand`; ask for it when you get there.
