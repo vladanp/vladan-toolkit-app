@@ -8,6 +8,13 @@ import { mockTauri } from '@/test/tauri';
 
 const press = (keys: string) => userEvent.keyboard(keys);
 
+/** Opens ⌘K and waits for the search field: Base UI moves focus there on the next frame. */
+async function openPalette() {
+  await press('{Control>}k{/Control}');
+  const search = page.getByRole('dialog', { name: 'Command palette' }).getByRole('combobox');
+  await expect.element(search).toHaveFocus();
+}
+
 describe('home', () => {
   it('greets and lists every tool with its shortcut', async () => {
     const { screen } = await renderApp('/');
@@ -112,9 +119,8 @@ describe('keyboard shortcuts', () => {
 describe('command palette', () => {
   it('searches and opens a tool', async () => {
     const { router } = await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     const dialog = page.getByRole('dialog', { name: 'Command palette' });
-    await expect.element(dialog).toBeVisible();
     await userEvent.keyboard('wren');
     await expect.element(dialog.getByRole('option', { name: /Wrench/ })).toBeVisible();
     await expect.element(dialog.getByRole('option', { name: /Hammer/ })).not.toBeInTheDocument();
@@ -125,7 +131,7 @@ describe('command palette', () => {
 
   it('ranks title matches above description matches', async () => {
     await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('settings');
     const options = page.getByRole('dialog').getByRole('option');
     await expect.element(options.first()).toHaveAccessibleName('Open Settings');
@@ -133,7 +139,7 @@ describe('command palette', () => {
 
   it('matches keywords and descriptions', async () => {
     await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('nail');
     await expect
       .element(
@@ -147,7 +153,7 @@ describe('command palette', () => {
 
   it('runs app actions such as switching theme', async () => {
     await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('light theme');
     await page.getByRole('option', { name: /Use light theme/ }).click();
     expect(useSettings.getState().theme).toBe('light');
@@ -156,7 +162,7 @@ describe('command palette', () => {
 
   it('shows an empty state and closes with Escape', async () => {
     await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('zzzzqqq');
     await expect.element(page.getByText('No matching tools or actions.')).toBeVisible();
     await userEvent.keyboard('{Escape}');
@@ -172,7 +178,7 @@ describe('command palette', () => {
       throw new Error('swing failed');
     });
     const { screen } = await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('swing');
     await userEvent.keyboard('{Enter}');
     await expect.element(screen.getByText('"Swing the hammer" failed')).toBeVisible();
@@ -183,7 +189,7 @@ describe('command palette', () => {
   it('offers "Check for updates" only when the build can update', async () => {
     mockTauri({ app_info: () => ({ ...APP, updaterEnabled: true }) });
     await renderApp('/');
-    await press('{Control>}k{/Control}');
+    await openPalette();
     await userEvent.keyboard('updates');
     await expect.element(page.getByRole('option', { name: /Check for updates/ })).toBeVisible();
   });
