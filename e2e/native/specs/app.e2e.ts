@@ -41,8 +41,8 @@ describe('Vladan Toolkit (native app)', () => {
 
   it('navigates with the command palette', async () => {
     await browser.keys([mod, 'k']);
-    const palette = $('[role="dialog"]');
-    await expect(palette).toBeDisplayed();
+    // Focus reaches the search field a frame after the dialog appears; type only once it's there.
+    await expect($('[role="dialog"] [role="combobox"]')).toBeFocused();
     await browser.keys('settings');
     await browser.keys('Enter');
     await expect($('h1=Settings')).toBeDisplayed();

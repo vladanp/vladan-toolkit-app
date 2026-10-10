@@ -17,7 +17,8 @@ test('home lists the built-in tools without errors', async ({ page }) => {
 test('command palette opens a tool from the keyboard', async ({ page }) => {
   await press(page, 'Mod+k');
   const palette = page.getByRole('dialog', { name: 'Command palette' });
-  await expect(palette).toBeVisible();
+  // Base UI moves focus into the search field on the next frame; type only once it's there.
+  await expect(palette.getByRole('combobox')).toBeFocused();
   await page.keyboard.type('system');
   await page.keyboard.press('Enter');
   await expect(palette).toBeHidden();
