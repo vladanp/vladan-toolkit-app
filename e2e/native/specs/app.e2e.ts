@@ -32,9 +32,10 @@ describe('Vladan Toolkit (native app)', () => {
 
   it('opens a Rust-backed tool and shows native data', async () => {
     await $('a*=System Info').click();
-    await expect($('section[aria-label="Hardware"]')).toBeDisplayed();
+    await expect($('section[aria-label="Processor"]')).toBeDisplayed();
     await expect($('section[aria-label="Operating system"]')).toBeDisplayed();
-    await expect($('section[aria-label="Application"]')).toHaveText(
+    await expect($('section[aria-label="Live usage"] h3')).toBeDisplayed();
+    await expect($('section[aria-label="App & region"]')).toHaveText(
       expect.stringContaining('Tauri 2.'),
     );
   });
