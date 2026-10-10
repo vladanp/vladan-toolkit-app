@@ -29,9 +29,13 @@ Grab the installer for your system from the
 | macOS 13+ | `Vladan.Toolkit_x.y.z_universal.dmg` | Apple Silicon and Intel. |
 | Linux | `.AppImage`, `.deb` or `.rpm` | The AppImage runs on any distribution; `.deb` and `.rpm` integrate with your package manager. |
 
-The installers are not code signed yet, so the first launch shows a warning once.
-On Windows, click **More info → Run anyway**. On macOS, right-click the app and choose
-**Open**. After that, the app checks for updates and installs them itself.
+The installers are not code signed yet, so the first launch shows a warning once:
+
+- **Windows:** click **More info → Run anyway**.
+- **macOS:** open the app once, close the warning, then go to **System Settings → Privacy &
+  Security**, scroll down and click **Open Anyway**.
+
+After that, the app checks for updates and installs them itself.
 
 ## Using it
 
