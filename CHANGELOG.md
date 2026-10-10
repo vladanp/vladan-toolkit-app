@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1](https://github.com/vladanp/vladan-toolkit-app/compare/v0.1.0...v0.1.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* ad-hoc sign the macOS app and correct first-launch steps ([#5](https://github.com/vladanp/vladan-toolkit-app/issues/5)) ([aeab8fb](https://github.com/vladanp/vladan-toolkit-app/commit/aeab8fb93a050b07dff6def60b484f796647676a))
+
+
+### Documentation
+
+* explain update signing versus code signing and the options per OS ([aeab8fb](https://github.com/vladanp/vladan-toolkit-app/commit/aeab8fb93a050b07dff6def60b484f796647676a))
+
 ## 0.1.0 (2026-10-09)
 
 

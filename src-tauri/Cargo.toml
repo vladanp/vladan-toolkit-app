@@ -1,6 +1,6 @@
 [package]
 name = "vladan-toolkit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Vladan Toolkit: an all-in-one desktop toolkit."
 authors = ["Vladan Petrovic"]
 license = "MIT"
