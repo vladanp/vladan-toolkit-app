@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/vladanp/vladan-toolkit-app/compare/v0.1.1...v0.2.0) (2026-10-16)
+
+
+### Features
+
+* **speed-test:** internet speed test with lag under load ([#10](https://github.com/vladanp/vladan-toolkit-app/issues/10)) ([3523d00](https://github.com/vladanp/vladan-toolkit-app/commit/3523d00353dfa2ac9619ee851bbca97214fc58d4))
+* **system-info:** live usage, graphics, displays, drives, network and battery ([#8](https://github.com/vladanp/vladan-toolkit-app/issues/8)) ([736664b](https://github.com/vladanp/vladan-toolkit-app/commit/736664b073a0188736fe1a314d8b8f830bd9202e))
+
 ## [0.1.1](https://github.com/vladanp/vladan-toolkit-app/compare/v0.1.0...v0.1.1) (2026-10-10)
 
 
