@@ -21,6 +21,7 @@ for (const theme of ['dark', 'light'] as const) {
       ['home', '/'],
       ['settings', '/#/settings'],
       ['system info', '/#/tools/system-info'],
+      ['speed test', '/#/tools/speed-test'],
       ['not found', '/#/nope'],
     ] as const) {
       test(`${name} meets WCAG 2.2 AA`, async ({ page }) => {

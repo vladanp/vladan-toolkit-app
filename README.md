@@ -37,6 +37,13 @@ The installers are not code signed yet, so the first launch shows a warning once
 
 After that, the app checks for updates and installs them itself.
 
+## Tools
+
+- **System Info:** your computer at a glance. Live CPU and memory load, graphics card and
+  driver, displays with their refresh rate, drives, network and battery. Copy it all as Markdown.
+- **Speed Test:** download, upload, ping, jitter and lag under load, measured against
+  Cloudflare. It says what the numbers mean for streaming, games and calls, and keeps a history.
+
 ## Using it
 
 | | |

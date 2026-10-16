@@ -1,5 +1,5 @@
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
-import type { AppInfo, GraphicsInfo, SystemInfo, SystemUsage } from '@/bindings';
+import type { AppInfo, GraphicsInfo, SpeedTestResult, SystemInfo, SystemUsage } from '@/bindings';
 
 export const APP_INFO: AppInfo = {
   name: 'Vladan Toolkit',
@@ -62,6 +62,22 @@ export const SYSTEM_USAGE: SystemUsage = {
   memoryTotalBytes: 16 * GB,
   swapUsedBytes: 1 * GB,
   swapTotalBytes: 4 * GB,
+};
+
+export const SPEED_TEST_RESULT: SpeedTestResult = {
+  downloadMbps: 487.3,
+  uploadMbps: 54.27,
+  latencyMs: 18.4,
+  jitterMs: 2.1,
+  downloadLatencyMs: 140,
+  uploadLatencyMs: 60,
+  dataUsedBytes: 690e6,
+  connection: {
+    server: 'Frankfurt (FRA)',
+    isp: 'Example ISP',
+    ip: '203.0.113.7',
+    location: 'Belgrade, RS',
+  },
 };
 
 /** A monitor as `plugin:window|*_monitor` returns it. */

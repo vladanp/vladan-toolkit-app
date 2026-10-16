@@ -28,6 +28,8 @@ pub fn specta_builder<R: Runtime>() -> Builder<R> {
             tools::system_info::system_info,
             tools::system_info::graphics::system_graphics,
             tools::system_info::usage::system_usage,
+            tools::speed_test::speed_test_run,
+            tools::speed_test::speed_test_cancel,
             // new-tool:commands
         ])
 }
@@ -120,6 +122,7 @@ pub fn setup<R: Runtime>(
         updater_enabled,
     ));
     app.manage(tools::system_info::usage::UsageSampler::default());
+    app.manage(tools::speed_test::SpeedTestState::default());
     create_main_window(app.handle())?;
     Ok(())
 }
