@@ -331,12 +331,64 @@ fn describe_connection(meta: Option<&Value>, locations: Option<&Value>) -> Conne
     }
 }
 
+/// What `/cdn-cgi/trace` reports, from `key=value` lines like `ip=…`, `colo=FRA`, `loc=RS`.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct Trace {
+    ip: Option<String>,
+    colo: Option<String>,
+    country: Option<String>,
+}
+
+fn parse_trace(text: &str) -> Trace {
+    let mut trace = Trace::default();
+    for line in text.lines() {
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        let value = Some(value.trim().to_owned()).filter(|value| !value.is_empty());
+        match key.trim() {
+            "ip" => trace.ip = value,
+            "colo" => trace.colo = value,
+            "loc" => trace.country = value,
+            _ => {}
+        }
+    }
+    trace
+}
+
+/// Fills in what `/meta` didn't say from `/cdn-cgi/trace`.
+fn with_trace(mut info: ConnectionInfo, trace: Trace) -> ConnectionInfo {
+    info.ip = info.ip.or(trace.ip);
+    info.server = info.server.or(trace.colo);
+    info.location = info.location.or(trace.country);
+    info
+}
+
+async fn fetch_text(client: &reqwest::Client, url: String) -> Option<String> {
+    let response = client
+        .get(url)
+        .timeout(Duration::from_secs(5))
+        .send()
+        .await
+        .ok()?
+        .error_for_status()
+        .ok()?;
+    response.text().await.ok()
+}
+
+/// `/meta` names the provider and city but may refuse non-browser clients; the public
+/// `/cdn-cgi/trace` always gives the IP address, data center and country.
 async fn connection_info(client: &reqwest::Client, base: &str) -> ConnectionInfo {
-    let (meta, locations) = tokio::join!(
+    let (meta, locations, trace) = tokio::join!(
         fetch_json(client, format!("{base}/meta")),
         fetch_json(client, format!("{base}/locations")),
+        fetch_text(client, format!("{base}/cdn-cgi/trace")),
     );
-    describe_connection(meta.as_ref(), locations.as_ref())
+    let trace = trace.as_deref().map(parse_trace).unwrap_or_default();
+    with_trace(
+        describe_connection(meta.as_ref(), locations.as_ref()),
+        trace,
+    )
 }
 
 /// Round trip of an empty request in ms, minus the server's own processing time.
@@ -706,15 +758,19 @@ mod tests {
 
     /// How the stand-in server misbehaves.
     #[derive(Debug, Clone, Copy, Default)]
+    #[allow(clippy::struct_excessive_bools)] // Independent switches, not a state machine.
     struct Mock {
         busy_downloads: bool,
         /// Answer "too many requests" to this many transfer requests first.
         busy_first_downloads: usize,
         broken_uploads: bool,
         no_meta: bool,
+        no_trace: bool,
     }
 
     const META: &str = r#"{"clientIp":"203.0.113.7","asOrganization":"Example ISP","colo":"FRA","city":"Belgrade","country":"RS","httpProtocol":"HTTP/1.1"}"#;
+    const TRACE: &str =
+        "fl=1f1\nh=speed.cloudflare.com\nip=198.51.100.9\ncolo=AMS\nloc=NL\nhttp=http/1.1\n";
     const LOCATIONS: &str =
         r#"[{"iata":"AMS","city":"Amsterdam"},{"iata":"FRA","lat":50.1,"city":"Frankfurt"}]"#;
 
@@ -764,6 +820,9 @@ mod tests {
                 }
                 ("GET", "/locations") if !mock.no_meta => {
                     respond(&mut write, "200 OK", json, LOCATIONS.as_bytes()).await?;
+                }
+                ("GET", "/cdn-cgi/trace") if !mock.no_trace => {
+                    respond(&mut write, "200 OK", "", TRACE.as_bytes()).await?;
                 }
                 ("GET", "/__down?bytes=0") => {
                     let timing = "Server-Timing: cfRequestDuration;dur=0.25\r\n";
@@ -888,13 +947,58 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn works_without_connection_details() {
+        // `/meta` refused: the trace still names the data center, address and country.
         let (result, _) = run_against(Mock {
             no_meta: true,
             ..Mock::default()
         })
         .await;
-        let result = result.unwrap_or_else(|e| panic!("{e}"));
-        assert_eq!(result.connection, ConnectionInfo::default());
+        let expected = ConnectionInfo {
+            server: Some("AMS".into()),
+            isp: None,
+            ip: Some("198.51.100.9".into()),
+            location: Some("NL".into()),
+        };
+        assert_eq!(
+            result.unwrap_or_else(|e| panic!("{e}")).connection,
+            expected
+        );
+
+        let (result, _) = run_against(Mock {
+            no_meta: true,
+            no_trace: true,
+            ..Mock::default()
+        })
+        .await;
+        let connection = result.unwrap_or_else(|e| panic!("{e}")).connection;
+        assert_eq!(connection, ConnectionInfo::default());
+    }
+
+    #[test]
+    fn reads_the_trace() {
+        assert_eq!(
+            parse_trace(TRACE),
+            Trace {
+                ip: Some("198.51.100.9".into()),
+                colo: Some("AMS".into()),
+                country: Some("NL".into()),
+            }
+        );
+        assert_eq!(parse_trace("garbage\nip=\n"), Trace::default());
+        // `/meta` wins where it answered.
+        let meta = ConnectionInfo {
+            server: Some("Frankfurt (FRA)".into()),
+            ..ConnectionInfo::default()
+        };
+        assert_eq!(
+            with_trace(meta, parse_trace(TRACE)),
+            ConnectionInfo {
+                server: Some("Frankfurt (FRA)".into()),
+                isp: None,
+                ip: Some("198.51.100.9".into()),
+                location: Some("NL".into()),
+            }
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -1112,7 +1216,14 @@ mod tests {
         };
         // Show what the metadata endpoints return, to keep the parser honest.
         let client = http_client().unwrap_or_else(|e| panic!("{e}"));
-        for path in ["meta", "locations"] {
+        if let Ok(response) = client.get(format!("{SERVER}/__down?bytes=0")).send().await {
+            for (name, value) in response.headers() {
+                if name.as_str().starts_with("cf-") || name.as_str() == "server-timing" {
+                    println!("header {name}: {}", value.to_str().unwrap_or("?"));
+                }
+            }
+        }
+        for path in ["meta", "locations", "cdn-cgi/trace"] {
             match client.get(format!("{SERVER}/{path}")).send().await {
                 Ok(response) => {
                     let status = response.status();

@@ -84,6 +84,7 @@ describe('Speed Test tool', () => {
     const connection = screen.getByRole('region', { name: 'Connection' });
     await expect.element(connection.getByText('Example ISP')).toBeVisible();
     await expect.element(connection.getByText('690 MB')).toBeVisible();
+    await expect.element(connection.getByText('Belgrade, Serbia')).toBeVisible();
     const rows = screen.getByRole('region', { name: 'History' }).getByRole('row');
     await expect.element(rows.last()).toBeVisible();
     expect(rows.elements()).toHaveLength(2);

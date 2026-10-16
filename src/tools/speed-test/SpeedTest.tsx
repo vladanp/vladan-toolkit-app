@@ -18,6 +18,7 @@ import { formatRelativeTime } from '@/lib/time';
 import {
   downloadSeconds,
   formatData,
+  formatLocation,
   formatMbps,
   formatMs,
   formatWait,
@@ -244,7 +245,7 @@ function Connection({ result }: { result: SavedResult }) {
     ['Server', result.server],
     ['Provider', result.isp],
     ['IP address', result.ip],
-    ['Location', result.location],
+    ['Location', result.location && formatLocation(result.location)],
     ['Data used', formatData(result.dataUsedBytes)],
   ];
   return (

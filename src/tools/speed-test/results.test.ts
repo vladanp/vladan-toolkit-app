@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   downloadSeconds,
   formatData,
+  formatLocation,
   formatMbps,
   formatMs,
   formatWait,
@@ -72,6 +73,12 @@ describe('formatting', () => {
     expect(formatWait(6720)).toBe('1h 52m');
     expect(formatWait(190)).toBe('3m 10s');
     expect(formatWait(0.2)).toBe('1s');
+  });
+
+  it('names countries the server gives as codes', () => {
+    expect(formatLocation('Belgrade, RS')).toBe('Belgrade, Serbia');
+    expect(formatLocation('NL')).toBe('Netherlands');
+    expect(formatLocation('Somewhere, XZ')).toBe('Somewhere, XZ');
   });
 
   it('works out download times', () => {

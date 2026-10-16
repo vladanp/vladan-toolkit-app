@@ -42,6 +42,16 @@ export function formatData(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1e6))} MB`;
 }
 
+const regions = new Intl.DisplayNames(['en'], { type: 'region' });
+
+/** `"Belgrade, RS"` → `"Belgrade, Serbia"`, `"NL"` → `"Netherlands"`. */
+export function formatLocation(location: string): string {
+  return location
+    .split(', ')
+    .map((part) => (/^[A-Z]{2}$/.test(part) ? (regions.of(part) ?? part) : part))
+    .join(', ');
+}
+
 export function formatMs(ms: number): string {
   return `${Math.round(ms)} ms`;
 }
