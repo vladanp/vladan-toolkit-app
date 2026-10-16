@@ -107,9 +107,6 @@ jobs:
           else
             cargo test --locked
           fi
-      - name: Live speed test against Cloudflare (temporary check, removed before merge)
-        working-directory: src-tauri
-        run: cargo test --locked live_cloudflare -- --ignored --nocapture
       - name: Build the app with the embedded WebDriver
         run: pnpm e2e:native:build
       - name: Drive the real app
