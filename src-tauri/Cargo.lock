@@ -4968,6 +4968,10 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 name = "vladan-toolkit"
 version = "0.1.1"
 dependencies = [
+ "bytes",
+ "futures-util",
+ "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "specta",
@@ -4984,6 +4988,7 @@ dependencies = [
  "tauri-plugin-wdio-webdriver",
  "tauri-plugin-window-state",
  "tauri-specta",
+ "tokio",
  "windows-registry",
 ]
 
