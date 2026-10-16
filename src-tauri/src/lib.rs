@@ -26,6 +26,8 @@ pub fn specta_builder<R: Runtime>() -> Builder<R> {
         .commands(collect_commands![
             commands::app::app_info,
             tools::system_info::system_info,
+            tools::system_info::graphics::system_graphics,
+            tools::system_info::usage::system_usage,
             // new-tool:commands
         ])
 }
@@ -117,6 +119,7 @@ pub fn setup<R: Runtime>(
         app.handle(),
         updater_enabled,
     ));
+    app.manage(tools::system_info::usage::UsageSampler::default());
     create_main_window(app.handle())?;
     Ok(())
 }

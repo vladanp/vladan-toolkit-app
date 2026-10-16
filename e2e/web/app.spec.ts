@@ -23,7 +23,7 @@ test('command palette opens a tool from the keyboard', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(palette).toBeHidden();
   await expect(page).toHaveURL(/#\/tools\/system-info$/);
-  await expect(page.getByRole('region', { name: 'Application' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'App & region' })).toBeVisible();
 });
 
 test('tool shortcuts and navigation history', async ({ page }) => {
@@ -68,5 +68,5 @@ test('copies system info to the clipboard', async ({ page, context, browserName 
   await page.getByRole('button', { name: 'Copy as Markdown' }).click();
   await expect(page.getByText('System info copied as Markdown')).toBeVisible();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-  expect(clipboard).toContain('### Application');
+  expect(clipboard).toContain('### App & region');
 });

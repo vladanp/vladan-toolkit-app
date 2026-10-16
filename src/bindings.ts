@@ -15,6 +15,21 @@ export const commands = {
 	 *  Returns an error if the worker thread panicked.
 	 */
 	systemInfo: () => __TAURI_INVOKE<SystemInfo>("system_info"),
+	/**
+	 *  Graphics cards and, on macOS, displays. Can take a second, so it is separate from
+	 *  [`super::system_info`].
+	 * 
+	 *  # Errors
+	 *  Returns an error if the worker thread panicked.
+	 */
+	systemGraphics: () => __TAURI_INVOKE<GraphicsInfo>("system_graphics"),
+	/**
+	 *  Current CPU and memory load. Poll it no faster than every second or so.
+	 * 
+	 *  # Errors
+	 *  Never fails; the `Result` lets the async command borrow managed state.
+	 */
+	systemUsage: () => __TAURI_INVOKE<SystemUsage>("system_usage"),
 };
 
 /* Types */
@@ -32,16 +47,105 @@ export type AppInfo = {
 	updaterEnabled: boolean,
 };
 
+export type BatteryInfo = {
+	chargePercent: number | null,
+	state: BatteryState,
+	/**  Capacity left compared to when it was new. `None` when the battery reports nonsense. */
+	healthPercent: number | null,
+	cycleCount: number | null,
+	secondsToFull: number | null,
+	secondsToEmpty: number | null,
+};
+
+export type BatteryState = "charging" | "discharging" | "full" | "empty" | 
+/**  Plugged in but held below full by a charge limit. */
+"paused" | "unknown";
+
+/**
+ *  What the machine is, as far as its firmware says. Placeholder strings that vendors
+ *  leave in (`"To Be Filled By O.E.M."`, `"System Product Name"`) are dropped.
+ */
+export type Device = {
+	vendor: string | null,
+	model: string | null,
+	motherboard: string | null,
+};
+
+export type DiskInfo = {
+	name: string,
+	mountPoint: string,
+	fileSystem: string,
+	kind: DiskType,
+	totalBytes: number | null,
+	availableBytes: number | null,
+	removable: boolean,
+};
+
+export type DiskType = "ssd" | "hdd" | "unknown";
+
+export type DisplayInfo = {
+	name: string,
+	/**  Physical pixels. */
+	width: number,
+	height: number,
+	/**  Physical pixels per point (2 on Retina screens). */
+	scale: number | null,
+	refreshHz: number | null,
+	primary: boolean,
+	builtin: boolean,
+};
+
+export type GpuInfo = {
+	name: string,
+	vendor: string | null,
+	/**  Dedicated video memory. `None` for GPUs that share system memory (Apple silicon). */
+	memoryBytes: number | null,
+	/**  GPU cores, as Apple reports them. */
+	cores: number | null,
+	/**  In the vendor's own numbering where we know it (NVIDIA "560.94", AMD Adrenalin). */
+	driverVersion: string | null,
+};
+
+export type GraphicsInfo = {
+	gpus: GpuInfo[],
+	/**  Filled on macOS only. */
+	displays: DisplayInfo[],
+};
+
+export type NetworkInfo = {
+	name: string,
+	/**  Local addresses, IPv4 first. Loopback and link-local addresses are left out. */
+	addresses: string[],
+};
+
 /**  A snapshot of the host machine. Sizes are `f64` because TypeScript numbers are doubles. */
 export type SystemInfo = {
+	device: Device,
 	osName: string | null,
 	osVersion: string | null,
 	kernelVersion: string | null,
+	hostName: string | null,
 	arch: string,
 	cpuBrand: string | null,
+	cpuFrequencyMhz: number | null,
 	logicalCores: number,
 	physicalCores: number | null,
 	totalMemoryBytes: number | null,
+	totalSwapBytes: number | null,
 	uptimeSeconds: number | null,
+	disks: DiskInfo[],
+	networks: NetworkInfo[],
+	battery: BatteryInfo | null,
+};
+
+export type SystemUsage = {
+	/**  0 to 100, across all cores. */
+	cpuPercent: number | null,
+	/**  0 to 100 for each logical core. */
+	corePercents: (number | null)[],
+	memoryUsedBytes: number | null,
+	memoryTotalBytes: number | null,
+	swapUsedBytes: number | null,
+	swapTotalBytes: number | null,
 };
 

@@ -5,8 +5,10 @@ import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-react';
 import { Button } from './button';
 import { Kbd } from './kbd';
+import { Meter } from './meter';
 import { Row, Section } from './section';
 import { Segmented } from './segmented';
+import { Sparkline } from './sparkline';
 import { Switch } from './switch';
 import { Tooltip, TooltipProvider } from './tooltip';
 
@@ -137,5 +139,56 @@ describe('Tooltip', () => {
     );
     await userEvent.hover(screen.getByRole('button', { name: 'plain' }));
     expect(document.body.textContent).not.toContain('Hidden');
+  });
+});
+
+describe('Meter', () => {
+  it('exposes a clamped percentage and colors by tone', async () => {
+    const screen = await render(
+      <>
+        <Meter fraction={0.42} label="Disk used" />
+        <Meter fraction={1.7} label="Over" tone="danger" />
+        <Meter fraction={Number.NaN} label="Broken" tone="warning" />
+      </>,
+    );
+    const disk = screen.getByRole('meter', { name: 'Disk used' });
+    await expect.element(disk).toHaveAttribute('aria-valuenow', '42');
+    await expect.element(disk).toHaveAttribute('aria-valuetext', '42%');
+    await expect
+      .element(screen.getByRole('meter', { name: 'Over' }))
+      .toHaveAttribute('aria-valuenow', '100');
+    await expect
+      .element(screen.getByRole('meter', { name: 'Broken' }))
+      .toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('meter', { name: 'Over' }).element().className).toContain(
+      'bg-danger/20',
+    );
+  });
+});
+
+describe('Sparkline', () => {
+  const describePoint = (value: number, index: number) => `#${index}: ${value}`;
+
+  it('draws nothing but its label without data', async () => {
+    const screen = await render(
+      <Sparkline values={[]} capacity={10} max={100} label="Empty" describe={describePoint} />,
+    );
+    const chart = screen.getByRole('img', { name: 'Empty' });
+    await expect.element(chart).toBeVisible();
+    expect(chart.element().querySelector('svg')).toBeNull();
+  });
+
+  it('shows the value under the pointer and fits more values than slots', async () => {
+    const values = [10, 20, 30, 40, 50];
+    const screen = await render(
+      <div style={{ width: 200, paddingTop: 40 }}>
+        <Sparkline values={values} capacity={3} max={50} label="Load" describe={describePoint} />
+      </div>,
+    );
+    const chart = screen.getByRole('img', { name: 'Load' });
+    await userEvent.hover(chart, { position: { x: 1, y: 5 } });
+    await expect.element(page.getByText('#0: 10')).toBeInTheDocument();
+    await userEvent.hover(chart, { position: { x: 199, y: 5 } });
+    await expect.element(page.getByText('#4: 50')).toBeInTheDocument();
   });
 });

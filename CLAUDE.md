@@ -35,7 +35,7 @@ at an existing binary.
 src/
   app/            shell: router, AppShell, TitleBar, Sidebar, CommandPalette, pages
   core/           tool registry, IPC, hotkeys, theme, stores, updater (framework-agnostic logic)
-  components/ui/  primitives (Button, Kbd, Switch, Segmented, Tooltip, Section/Row)
+  components/ui/  primitives (Button, Kbd, Switch, Segmented, Tooltip, Section/Row, Meter, Sparkline)
   tools/<id>/     one folder per tool, auto-discovered
   bindings.ts     GENERATED from Rust
   styles/         design tokens (globals.css)
@@ -61,6 +61,7 @@ scripts/          tool generator, CI helpers (tested)
    with `#[tauri::command]` + `#[specta::specta]`, derive `specta::Type` on returned structs,
    then run `pnpm bindings` and call `commands.xxx()` from `@/core/ipc`.
    - Avoid `u64`/`i64` in returned types (TS can't represent them): use `f64` or `u32`.
+     An `f64` arrives as `number | null` (NaN serializes to `null`); default it on the TS side.
    - Guard native calls with `isTauri()` and give the browser preview a sensible fallback.
    - New plugin or OS access? Add the narrowest permission to `src-tauri/capabilities/default.json`.
 4. Tests: logic in `*.test.ts` (jsdom), UI in `*.test.tsx` (real browser), Rust `#[cfg(test)]`.
