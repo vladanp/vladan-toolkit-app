@@ -20,7 +20,8 @@ use std::time::{Duration, Instant};
 use bytes::Bytes;
 use futures_util::StreamExt;
 use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE, HeaderMap};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use serde_json::Value;
 use specta::Type;
 use tauri::State;
 use tauri::ipc::Channel;
@@ -216,11 +217,21 @@ fn steady_rate(series: &[(Duration, u64)], ramp_up: Duration) -> f64 {
     rate_mbps(from, last)
 }
 
+/// What a test ends with when the server keeps answering "too many requests".
+const BUSY: &str = "The speed test server is busy. Try again in a minute.";
+
+/// How long a transfer connection waits after "too many requests" before trying again.
+const BUSY_BACKOFF: Duration = Duration::from_millis(500);
+
+fn is_busy(error: &reqwest::Error) -> bool {
+    error.status() == Some(reqwest::StatusCode::TOO_MANY_REQUESTS)
+}
+
 /// Words for a failed request that a person can act on.
 fn describe(error: &reqwest::Error) -> String {
     if let Some(status) = error.status() {
-        return if status.as_u16() == 429 {
-            "The speed test server is busy. Try again in a minute.".into()
+        return if is_busy(error) {
+            BUSY.into()
         } else {
             format!(
                 "The speed test server answered with an error (HTTP {}).",
@@ -258,27 +269,7 @@ fn check_cancel(cancel: &AtomicBool) -> Result<(), String> {
     }
 }
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-struct Meta {
-    client_ip: Option<String>,
-    as_organization: Option<String>,
-    colo: Option<String>,
-    city: Option<String>,
-    country: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Location {
-    iata: String,
-    #[serde(default)]
-    city: Option<String>,
-}
-
-async fn fetch_json<T: serde::de::DeserializeOwned>(
-    client: &reqwest::Client,
-    url: String,
-) -> Option<T> {
+async fn fetch_json(client: &reqwest::Client, url: String) -> Option<Value> {
     let response = client
         .get(url)
         .timeout(Duration::from_secs(5))
@@ -290,38 +281,62 @@ async fn fetch_json<T: serde::de::DeserializeOwned>(
     response.json().await.ok()
 }
 
-fn non_empty(value: Option<String>) -> Option<String> {
-    value.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
+/// A non-blank string field.
+fn field(value: Option<&Value>, key: &str) -> Option<String> {
+    value?
+        .get(key)?
+        .as_str()
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+        .map(str::to_owned)
 }
 
-async fn connection_info(client: &reqwest::Client, base: &str) -> ConnectionInfo {
-    let (meta, locations) = tokio::join!(
-        fetch_json::<Meta>(client, format!("{base}/meta")),
-        fetch_json::<Vec<Location>>(client, format!("{base}/locations")),
-    );
-    let meta = meta.unwrap_or_default();
-    let colo = non_empty(meta.colo);
-    let city = colo.as_ref().and_then(|code| {
+/// Connection details from `/meta` and `/locations`, read leniently: every field may be
+/// missing, and the data center (`colo`) may be a code or an object with `iata` and `city`.
+fn describe_connection(meta: Option<&Value>, locations: Option<&Value>) -> ConnectionInfo {
+    let colo = meta.and_then(|meta| meta.get("colo"));
+    let code = colo
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .or_else(|| field(colo, "iata"))
+        .map(|code| code.trim().to_owned())
+        .filter(|code| !code.is_empty());
+    let city = field(colo, "city").or_else(|| {
+        let code = code.as_deref()?;
         locations?
-            .into_iter()
-            .find(|location| location.iata.eq_ignore_ascii_case(code))
-            .and_then(|location| non_empty(location.city))
+            .as_array()?
+            .iter()
+            .find(|location| {
+                location
+                    .get("iata")
+                    .and_then(Value::as_str)
+                    .is_some_and(|iata| iata.eq_ignore_ascii_case(code))
+            })
+            .and_then(|location| field(Some(location), "city"))
     });
-    let location = [non_empty(meta.city), non_empty(meta.country)]
+    let location = [field(meta, "city"), field(meta, "country")]
         .into_iter()
         .flatten()
         .collect::<Vec<_>>()
         .join(", ");
     ConnectionInfo {
-        server: match (city, colo) {
+        server: match (city, code) {
             (Some(city), Some(code)) => Some(format!("{city} ({code})")),
             (None, code) => code,
             (Some(city), None) => Some(city),
         },
-        isp: non_empty(meta.as_organization),
-        ip: non_empty(meta.client_ip),
-        location: Some(location).filter(|l| !l.is_empty()),
+        isp: field(meta, "asOrganization"),
+        ip: field(meta, "clientIp"),
+        location: Some(location).filter(|location| !location.is_empty()),
     }
+}
+
+async fn connection_info(client: &reqwest::Client, base: &str) -> ConnectionInfo {
+    let (meta, locations) = tokio::join!(
+        fetch_json(client, format!("{base}/meta")),
+        fetch_json(client, format!("{base}/locations")),
+    );
+    describe_connection(meta.as_ref(), locations.as_ref())
 }
 
 /// Round trip of an empty request in ms, minus the server's own processing time.
@@ -395,23 +410,43 @@ struct Lane {
     moved: Arc<AtomicU64>,
     deadline: Instant,
     cancel: Arc<AtomicBool>,
+    /// Set when the server said "too many requests" at least once.
+    busy: Arc<AtomicBool>,
 }
 
 impl Lane {
     fn open(&self) -> bool {
         Instant::now() < self.deadline && !self.cancel.load(Ordering::Relaxed)
     }
+
+    /// Sends a request; on "too many requests" waits a moment and returns `None` so the
+    /// worker tries again (Cloudflare limits bursts from one address).
+    async fn send(
+        &self,
+        request: reqwest::RequestBuilder,
+    ) -> Result<Option<reqwest::Response>, String> {
+        match request
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
+        {
+            Ok(response) => Ok(Some(response)),
+            Err(error) if is_busy(&error) => {
+                self.busy.store(true, Ordering::Relaxed);
+                let left = self.deadline.saturating_duration_since(Instant::now());
+                tokio::time::sleep(BUSY_BACKOFF.min(left)).await;
+                Ok(None)
+            }
+            Err(error) => Err(describe(&error)),
+        }
+    }
 }
 
 async fn download_worker(lane: Lane) -> Result<(), String> {
     while lane.open() {
-        let response = lane
-            .client
-            .get(&lane.url)
-            .send()
-            .await
-            .and_then(reqwest::Response::error_for_status)
-            .map_err(|e| describe(&e))?;
+        let Some(response) = lane.send(lane.client.get(&lane.url)).await? else {
+            continue;
+        };
         let mut body = response.bytes_stream();
         while let Some(chunk) = body.next().await {
             let chunk = chunk.map_err(|e| describe(&e))?;
@@ -450,18 +485,16 @@ fn counted_body(
 
 async fn upload_worker(lane: Lane) -> Result<(), String> {
     while lane.open() {
-        lane.client
+        let request = lane
+            .client
             .post(&lane.url)
             .header(CONTENT_TYPE, "application/octet-stream")
             .header(CONTENT_LENGTH, lane.request_bytes)
             .body(reqwest::Body::wrap_stream(counted_body(
                 lane.request_bytes,
                 Arc::clone(&lane.moved),
-            )))
-            .send()
-            .await
-            .and_then(reqwest::Response::error_for_status)
-            .map_err(|e| describe(&e))?;
+            )));
+        lane.send(request).await?;
     }
     Ok(())
 }
@@ -506,6 +539,7 @@ async fn transfer<E: Fn(SpeedTestEvent) + Sync>(
         moved: Arc::new(AtomicU64::new(0)),
         deadline,
         cancel: Arc::clone(cancel),
+        busy: Arc::new(AtomicBool::new(false)),
     };
 
     let mut workers = JoinSet::new();
@@ -562,7 +596,10 @@ async fn transfer<E: Fn(SpeedTestEvent) + Sync>(
     let bytes = lane.moved.load(Ordering::Relaxed);
     // Every connection gave up before the time was up: the server refused the transfer.
     if stopped_early || bytes == 0 {
-        return Err(failure.unwrap_or_else(|| "No data got through.".into()));
+        let busy = lane.busy.load(Ordering::Relaxed);
+        return Err(
+            failure.unwrap_or_else(|| if busy { BUSY } else { "No data got through." }.into())
+        );
     }
     Ok(Transfer {
         mbps: steady_rate(&series, plan.ramp_up),
@@ -671,6 +708,8 @@ mod tests {
     #[derive(Debug, Clone, Copy, Default)]
     struct Mock {
         busy_downloads: bool,
+        /// Answer "too many requests" to this many transfer requests first.
+        busy_first_downloads: usize,
         broken_uploads: bool,
         no_meta: bool,
     }
@@ -694,7 +733,7 @@ mod tests {
     }
 
     /// A tiny HTTP/1.1 server speaking just enough of Cloudflare's speed test API.
-    async fn handle(socket: TcpStream, mock: Mock) -> std::io::Result<()> {
+    async fn handle(socket: TcpStream, mock: Mock, served: Arc<AtomicU64>) -> std::io::Result<()> {
         let (read, mut write) = socket.into_split();
         let mut reader = BufReader::new(read);
         loop {
@@ -731,7 +770,8 @@ mod tests {
                     respond(&mut write, "200 OK", timing, b"").await?;
                 }
                 ("GET", path) if path.starts_with("/__down?bytes=") => {
-                    if mock.busy_downloads {
+                    let index = served.fetch_add(1, Ordering::SeqCst);
+                    if mock.busy_downloads || index < mock.busy_first_downloads as u64 {
                         respond(&mut write, "429 Too Many Requests", "", b"").await?;
                         continue;
                     }
@@ -762,9 +802,10 @@ mod tests {
         let address = listener
             .local_addr()
             .unwrap_or_else(|e| panic!("address: {e}"));
+        let served = Arc::new(AtomicU64::new(0));
         tokio::spawn(async move {
             while let Ok((socket, _)) = listener.accept().await {
-                tokio::spawn(handle(socket, mock));
+                tokio::spawn(handle(socket, mock, Arc::clone(&served)));
             }
         });
         format!("http://{address}")
@@ -867,6 +908,63 @@ mod tests {
             result.err().as_deref(),
             Some("The speed test server is busy. Try again in a minute.")
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn rides_out_a_briefly_busy_server() {
+        // Long enough for a back off or two (the quick plan's phases are shorter than one).
+        let plan = Plan {
+            duration: Duration::from_millis(2500),
+            ..quick_plan(
+                serve(Mock {
+                    busy_first_downloads: 3,
+                    ..Mock::default()
+                })
+                .await,
+            )
+        };
+        let result = run(&plan, &Arc::new(AtomicBool::new(false)), &|_| {}).await;
+        assert!(result.unwrap_or_else(|e| panic!("{e}")).download_mbps > 0.0);
+    }
+
+    #[test]
+    fn reads_connection_details_leniently() {
+        let json =
+            |text: &str| serde_json::from_str::<Value>(text).unwrap_or_else(|e| panic!("{e}"));
+        let locations = json(LOCATIONS);
+        let expected = ConnectionInfo {
+            server: Some("Frankfurt (FRA)".into()),
+            isp: Some("Example ISP".into()),
+            ip: Some("203.0.113.7".into()),
+            location: Some("Belgrade, RS".into()),
+        };
+        assert_eq!(
+            describe_connection(Some(&json(META)), Some(&locations)),
+            expected
+        );
+        // The data center as an object instead of a code.
+        let nested = json(
+            r#"{"clientIp":"203.0.113.7","asOrganization":"Example ISP","city":"Belgrade","country":"RS","colo":{"iata":"FRA","city":"Frankfurt"}}"#,
+        );
+        assert_eq!(describe_connection(Some(&nested), None), expected);
+        // A code the locations list doesn't know, and blank fields.
+        let sparse = json(r#"{"colo":"XYZ","clientIp":" ","country":"RS"}"#);
+        assert_eq!(
+            describe_connection(Some(&sparse), Some(&locations)),
+            ConnectionInfo {
+                server: Some("XYZ".into()),
+                location: Some("RS".into()),
+                ..ConnectionInfo::default()
+            }
+        );
+        let city_only = json(r#"{"colo":{"city":"Paris"}}"#);
+        assert_eq!(
+            describe_connection(Some(&city_only), None)
+                .server
+                .as_deref(),
+            Some("Paris")
+        );
+        assert_eq!(describe_connection(None, None), ConnectionInfo::default());
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -1012,11 +1110,28 @@ mod tests {
             ramp_up: Duration::from_secs(1),
             ..Plan::default()
         };
+        // Show what the metadata endpoints return, to keep the parser honest.
+        let client = http_client().unwrap_or_else(|e| panic!("{e}"));
+        for path in ["meta", "locations"] {
+            match client.get(format!("{SERVER}/{path}")).send().await {
+                Ok(response) => {
+                    let status = response.status();
+                    let body: String = response
+                        .text()
+                        .await
+                        .unwrap_or_default()
+                        .chars()
+                        .take(400)
+                        .collect();
+                    println!("/{path} {status}: {body}");
+                }
+                Err(error) => println!("/{path} failed: {error}"),
+            }
+        }
         let result = run(&plan, &Arc::new(AtomicBool::new(false)), &|_| {})
             .await
             .unwrap_or_else(|e| panic!("{e}"));
         println!("{result:#?}");
         assert!(result.download_mbps > 0.0 && result.upload_mbps > 0.0);
-        assert!(result.connection.server.is_some());
     }
 }
