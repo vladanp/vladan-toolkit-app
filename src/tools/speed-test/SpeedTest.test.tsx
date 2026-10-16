@@ -71,7 +71,7 @@ describe('Speed Test tool', () => {
     await expect.element(results.getByText('487', { exact: true })).toBeVisible();
     await expect.element(results.getByText('54.3', { exact: true })).toBeVisible();
     await expect
-      .element(results.getByText(/^Last test just now · Frankfurt \(FRA\)$/))
+      .element(results.getByText(/^Last test just now · Cloudflare Frankfurt \(FRA\)$/))
       .toBeVisible();
 
     const meaning = screen.getByRole('region', { name: 'What this means' });
@@ -85,6 +85,7 @@ describe('Speed Test tool', () => {
     await expect.element(connection.getByText('Example ISP')).toBeVisible();
     await expect.element(connection.getByText('690 MB')).toBeVisible();
     await expect.element(connection.getByText('Belgrade, Serbia')).toBeVisible();
+    await expect.element(connection.getByText('Cloudflare Frankfurt (FRA)')).toBeVisible();
     const rows = screen.getByRole('region', { name: 'History' }).getByRole('row');
     await expect.element(rows.last()).toBeVisible();
     expect(rows.elements()).toHaveLength(2);
@@ -113,6 +114,26 @@ describe('Speed Test tool', () => {
       .toHaveTextContent(
         "Speed test failed: Couldn't reach the speed test server. Check your internet connection.",
       );
+  });
+
+  it('leaves out connection details Cloudflare did not report', async () => {
+    mockTauri();
+    useSpeedTest.setState({
+      history: [
+        toSaved(
+          {
+            ...SPEED_TEST_RESULT,
+            connection: { server: 'BEG', isp: null, ip: '198.51.100.9', location: 'RS' },
+          },
+          Date.now(),
+        ),
+      ],
+    });
+    const screen = await render(<SpeedTest />);
+    const connection = screen.getByRole('region', { name: 'Connection' });
+    await expect.element(connection.getByText('Cloudflare BEG')).toBeVisible();
+    await expect.element(connection.getByText('Serbia')).toBeVisible();
+    expect(connection.element().textContent).not.toContain('Provider');
   });
 
   it('keeps a history with a trend and can clear it', async () => {

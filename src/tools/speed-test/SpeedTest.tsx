@@ -166,7 +166,7 @@ function Results({ result, onStart }: { result: SavedResult; onStart: () => void
       <div className="flex items-center justify-between gap-4 border-line border-b px-4 py-2.5">
         <p className="min-w-0 truncate text-fg-muted text-xs">
           Last test {formatRelativeTime(result.at)}
-          {result.server && ` · ${result.server}`}
+          {result.server && ` · Cloudflare ${result.server}`}
         </p>
         <Button size="sm" variant="primary" onClick={onStart}>
           <RotateCw className="size-3.5" />
@@ -242,7 +242,7 @@ function Meaning({ result }: { result: SavedResult }) {
 
 function Connection({ result }: { result: SavedResult }) {
   const rows: [string, string | null][] = [
-    ['Server', result.server],
+    ['Server', result.server && `Cloudflare ${result.server}`],
     ['Provider', result.isp],
     ['IP address', result.ip],
     ['Location', result.location && formatLocation(result.location)],
@@ -251,12 +251,15 @@ function Connection({ result }: { result: SavedResult }) {
   return (
     <Card title="Connection">
       <dl className="divide-y divide-line">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex gap-4 px-4 py-2">
-            <dt className="w-24 shrink-0 text-fg-subtle">{label}</dt>
-            <dd className="min-w-0 select-text break-words text-fg">{value ?? 'Unknown'}</dd>
-          </div>
-        ))}
+        {/* Cloudflare doesn't always say who the provider is; leave out what it didn't report. */}
+        {rows
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} className="flex gap-4 px-4 py-2">
+              <dt className="w-24 shrink-0 text-fg-subtle">{label}</dt>
+              <dd className="min-w-0 select-text break-words text-fg">{value}</dd>
+            </div>
+          ))}
       </dl>
     </Card>
   );

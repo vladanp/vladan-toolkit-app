@@ -165,16 +165,17 @@ fn jitter(samples: &[f64]) -> f64 {
     total / (samples.len() - 1) as f64
 }
 
-/// Server processing time in ms from `Server-Timing: cfRequestDuration;dur=12.3`.
+/// Time in ms the server spent on a request: every `dur` in its `Server-Timing` headers
+/// added up. Cloudflare sends `cfSpeedEdge;dur=8, cfSpeedWorker;dur=39` (older servers
+/// `cfRequestDuration;dur=12`), plus `cfL4` connection stats that carry no `dur`.
 fn server_time_ms(headers: &HeaderMap) -> Option<f64> {
-    let value = headers.get("server-timing")?.to_str().ok()?;
-    value
-        .split(',')
-        .find(|metric| metric.trim_start().starts_with("cfRequestDuration"))?
-        .split(';')
-        .find_map(|param| param.trim().strip_prefix("dur="))?
-        .parse()
-        .ok()
+    headers
+        .get_all("server-timing")
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split([',', ';']))
+        .filter_map(|param| param.trim().strip_prefix("dur=")?.parse::<f64>().ok())
+        .reduce(|total, dur| total + dur)
 }
 
 /// Megabits per second between two `(elapsed, bytes)` readings.
@@ -825,7 +826,7 @@ mod tests {
                     respond(&mut write, "200 OK", "", TRACE.as_bytes()).await?;
                 }
                 ("GET", "/__down?bytes=0") => {
-                    let timing = "Server-Timing: cfRequestDuration;dur=0.25\r\n";
+                    let timing = "Server-Timing: cfSpeedEdge;dur=0.1, cfSpeedWorker;dur=0.15\r\nServer-Timing: cfL4;desc=\"?proto=TCP&rtt=100\"\r\n";
                     respond(&mut write, "200 OK", timing, b"").await?;
                 }
                 ("GET", path) if path.starts_with("/__down?bytes=") => {
@@ -1157,20 +1158,27 @@ mod tests {
 
     #[test]
     fn reads_server_timing() {
+        let header = |text: &str| text.parse().unwrap_or_else(|e| panic!("{e}"));
         let mut headers = HeaderMap::new();
         assert_eq!(server_time_ms(&headers), None);
-        headers.insert(
+        // Today's format: two durations, plus connection stats in a second header.
+        headers.append(
             "server-timing",
-            "cfL4;desc=\"x\", cfRequestDuration;dur=12.5"
-                .parse()
-                .unwrap_or_else(|e| panic!("{e}")),
+            header("cfSpeedEdge;dur=8, cfSpeedWorker;dur=39"),
         );
-        assert_eq!(server_time_ms(&headers), Some(12.5));
-        headers.insert(
+        headers.append("server-timing", header("cfL4;desc=\"?proto=TCP&rtt=5831\""));
+        assert_eq!(server_time_ms(&headers), Some(47.0));
+        // The older single duration.
+        let mut older = HeaderMap::new();
+        older.insert(
             "server-timing",
-            "other;dur=3".parse().unwrap_or_else(|e| panic!("{e}")),
+            header("cfL4;desc=\"x\", cfRequestDuration;dur=12.5"),
         );
-        assert_eq!(server_time_ms(&headers), None);
+        assert_eq!(server_time_ms(&older), Some(12.5));
+        // Stats without durations.
+        let mut stats = HeaderMap::new();
+        stats.insert("server-timing", header("cfL4;desc=\"x\""));
+        assert_eq!(server_time_ms(&stats), None);
     }
 
     #[test]
