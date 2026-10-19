@@ -48,7 +48,7 @@ tauri-plugin-single-instance = "2.5"
 
 [target.'cfg(windows)'.dependencies]
 # Reads graphics card details from the display adapter class (System Info).
-windows-registry = "0.6"
+windows-registry = "0.100"
 
 [dev-dependencies]
 tauri = { version = "2.12", features = ["test"] }
