@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/vladanp/vladan-toolkit-app/compare/v0.2.0...v0.2.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** bump the tauri group in /src-tauri with 5 updates ([#11](https://github.com/vladanp/vladan-toolkit-app/issues/11)) ([7ea022e](https://github.com/vladanp/vladan-toolkit-app/commit/7ea022e470b94f20a0dbffe7bf4eb299b1531738))
+* **deps:** bump windows-registry from 0.6.1 to 0.100.0 in /src-tauri ([#14](https://github.com/vladanp/vladan-toolkit-app/issues/14)) ([962e114](https://github.com/vladanp/vladan-toolkit-app/commit/962e114669c73bc57172516b15fbbc7c51468f53))
+
 ## [0.2.0](https://github.com/vladanp/vladan-toolkit-app/compare/v0.1.1...v0.2.0) (2026-10-16)
 
 
