@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1](https://github.com/vladanp/vladan-toolkit-app/compare/v0.2.0...v0.2.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deps:** bump the dependencies group across 1 directory with 8 updates ([#20](https://github.com/vladanp/vladan-toolkit-app/issues/20)) ([c0ad863](https://github.com/vladanp/vladan-toolkit-app/commit/c0ad863a2a3f6446756f33710b5c45256e566a5a))
+* **deps:** bump the dependencies group with 3 updates ([#24](https://github.com/vladanp/vladan-toolkit-app/issues/24)) ([4e6a6e4](https://github.com/vladanp/vladan-toolkit-app/commit/4e6a6e4bc817f12c3c382f1ffc445c2696c86386))
+* **deps:** bump the rust-dependencies group across 1 directory with 2 updates ([#18](https://github.com/vladanp/vladan-toolkit-app/issues/18)) ([269348d](https://github.com/vladanp/vladan-toolkit-app/commit/269348d5ea8f4a59d7e97262717eec09a21d6ac0))
+* **deps:** bump the tauri group in /src-tauri with 4 updates ([#19](https://github.com/vladanp/vladan-toolkit-app/issues/19)) ([331433c](https://github.com/vladanp/vladan-toolkit-app/commit/331433c2b500c87a0f18e7e1249c8d6c1a7e4012))
+* **deps:** bump the tauri group in /src-tauri with 4 updates ([#23](https://github.com/vladanp/vladan-toolkit-app/issues/23)) ([1143010](https://github.com/vladanp/vladan-toolkit-app/commit/11430108cb0067ed62cd985a5b6eeeec9b2f6a35))
+* **deps:** bump the tauri group in /src-tauri with 5 updates ([#11](https://github.com/vladanp/vladan-toolkit-app/issues/11)) ([7ea022e](https://github.com/vladanp/vladan-toolkit-app/commit/7ea022e470b94f20a0dbffe7bf4eb299b1531738))
+* **deps:** bump tokio in /src-tauri in the rust-dependencies group ([#25](https://github.com/vladanp/vladan-toolkit-app/issues/25)) ([2f1a78b](https://github.com/vladanp/vladan-toolkit-app/commit/2f1a78bb244dbd9942d246cd16ceba28a4f52882))
+* **deps:** bump windows-registry from 0.6.1 to 0.100.0 in /src-tauri ([#14](https://github.com/vladanp/vladan-toolkit-app/issues/14)) ([962e114](https://github.com/vladanp/vladan-toolkit-app/commit/962e114669c73bc57172516b15fbbc7c51468f53))
+
 ## [0.2.0](https://github.com/vladanp/vladan-toolkit-app/compare/v0.1.1...v0.2.0) (2026-10-16)
 
 
